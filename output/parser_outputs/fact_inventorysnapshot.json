@@ -1,0 +1,578 @@
+{
+  "cells": [
+    {
+      "cell_index": 1,
+      "imports": [
+        "pyspark.sql.types.*",
+        "uuid",
+        "delta.tables.DeltaTable",
+        "pyspark.sql.functions",
+        "datetime.datetime"
+      ],
+      "variables": [],
+      "dataframes": [],
+      "functions": [],
+      "magic_commands": [],
+      "code_snippet": "# ========================================\n# LIBRARY IMPORTS\n# ========================================\n\nfrom pyspark.sql import functions as F\nfrom pyspark.sql.types import *\nfrom datetime import datetime\nfrom delta.tables import DeltaTable\nimport uuid"
+    },
+    {
+      "cell_index": 2,
+      "imports": [],
+      "variables": [
+        "source_table",
+        "platform",
+        "DestinationSchemaName",
+        "SourceTableName",
+        "DestinationTableName",
+        "layer",
+        "etl_runtime",
+        "enriched_catalog",
+        "target_table",
+        "proc",
+        "SourceSchemaName",
+        "federated_starschema_catalog",
+        "federated_ods_catalog"
+      ],
+      "dataframes": [],
+      "functions": [
+        "now"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ==============================================\n# CONFIGURATION\n# ==============================================\n\nfederated_ods_catalog=\"djj_ods\"                                    #Catalog name for source table\nSourceSchemaName=\"dbo\"                                          #Schema name for source table\nSourceTableName=\"ODS_CORE_User_Demographic\"                               #Table name for source table\nenriched_catalog=\"djj_enriched_non_prod\"                 #Catalog name for target table\nDestinationSchemaName=\"nue\"                                     #Schema name for target table\nDestinationTableName=\"fact_InventorySnapshot_temp\"                                  #Table name for target table\nfederated_starschema_catalog  = \"djj_starschema\"\netl_runtime = datetime.now()                                    #Current Runtime for updating LastUpdateTime\n\nlayer=\"enriched\"                                                                            #Target layer\nsource_table=f\"{federated_ods_catalog}.{SourceSchemaName}.{SourceTableName}\"\ntarget_table=f\"{enriched_catalog}.{DestinationSchemaName}.{DestinationTableName}\"\nproc=\"incremental\"                                                                    #Load type\nplatform=\"mssql\"                                                                            #Source platform"
+    },
+    {
+      "cell_index": 3,
+      "imports": [],
+      "variables": [],
+      "dataframes": [],
+      "functions": [],
+      "magic_commands": [
+        "skip",
+        "run"
+      ],
+      "code_snippet": "%skip\n%run ../Metadata_Logger/execution_logger"
+    },
+    {
+      "cell_index": 4,
+      "imports": [],
+      "variables": [],
+      "dataframes": [],
+      "functions": [],
+      "magic_commands": [
+        "run"
+      ],
+      "code_snippet": "%run \"Workspace/Shared/DJJ Migration/Metadata_Logger/execution_logger\""
+    },
+    {
+      "cell_index": 5,
+      "imports": [],
+      "variables": [
+        "run_ctx"
+      ],
+      "dataframes": [],
+      "functions": [
+        "start_execution_run"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ===================================\n# START METADATA LOGGING\n# ===================================\n\nrun_ctx = start_execution_run(\n    layer=layer,\n    source_table=source_table,\n    target_table=target_table,\n    proc=proc,\n    platform=platform\n)"
+    },
+    {
+      "cell_index": 6,
+      "imports": [],
+      "variables": [],
+      "dataframes": [],
+      "functions": [],
+      "magic_commands": [
+        "sql"
+      ],
+      "code_snippet": "%sql\nCREATE OR REPLACE TABLE djj_enriched_non_prod.NUE.fact_InventorySnapshot_temp (\n    FiscalWeekKey                              INT NOT NULL,\n    OrgID                                      INT NOT NULL,\n    EnterpriseGradeGroup                       STRING COLLATE UTF8_LCASE NOT NULL,\n    EnterpriseGradeGroupKey                    INT NOT NULL,\n    ConsumerKey                                INT NOT NULL,\n    ReceivedWgt                                BIGINT,\n    ReceivedAmount                             DECIMAL(18, 2),\n    BeginningWgt                               BIGINT,\n    BeginningAmount                            DECIMAL(18, 4),\n    ConsumedWgt                                BIGINT,\n    ConsumedAmount                             DECIMAL(18, 4),\n    EndingWgt                                  BIGINT,\n    EndingAmount                               DECIMAL(18, 4),\n    BeginningInTransitWgt                      INT,\n    BeginningInTransitWgt_BeforeAdjustment     INT,\n    BeginningInTransitAmount                   DECIMAL(18, 4),\n    BeginningInTransitAmount_BeforeAdjustment  DECIMAL(18, 4),\n    EndingInTransitWgt                         INT,\n    EndingInTransitWgt_BeforeAdjustment        INT,\n    EndingInTransitAmount                      DECIMAL(18, 4),\n    EndingInTransitAmount_BeforeAdjustment     DECIMAL(18, 4),\n    DJJGeneratedFlag                           INT NOT NULL,\n    ETLSSExecutionID                           BIGINT,\n    EnrichedTimestampUTC                          TIMESTAMP NOT NULL,\n    CONSTRAINT PK_NUE_factInventorySnapshot PRIMARY KEY (FiscalWeekKey, OrgID, EnterpriseGradeGroup)\n) USING DELTA;"
+    },
+    {
+      "cell_index": 7,
+      "imports": [],
+      "variables": [],
+      "dataframes": [],
+      "functions": [],
+      "magic_commands": [
+        "sql"
+      ],
+      "code_snippet": "%sql\ninsert into djj_enriched_non_prod.NUE.fact_InventorySnapshot_temp\nselect * from djj_starschema.NUE.factInventorySnapshot\nwhere DJJLastUpdateTime <= '2026-05-10 22:53:22.983'"
+    },
+    {
+      "cell_index": 8,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "ole_src_rawMaterialReceipt_output_df"
+      ],
+      "functions": [
+        "sql"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ===================================================\n# OLE_SRC_rawMaterialReceipt - OLE DB Source\n# ===================================================\n\nole_src_rawMaterialReceipt_output_df = spark.sql(f\"\"\"\n    SELECT (Year * 100) + Week AS FiscalWeekKey\n      ,OrgID\n      ,UPPER(EntGradeGroup) EntGradeGroup\n      ,ReceivedAmount AS ReceivedWgt  --Nucor uses Amount for Weights\n      ,ReceivedValue AS ReceivedAmount -- Nucor uses Amount for dollar Amount\n      \n  FROM {federated_ods_catalog}.{SourceSchemaName}.ODS_NUE_RawMaterialReceipt\n  WHERE DJJDeletedFlag=0 AND\n  NOT (ReceivedAmount=0 AND\n\t\tReceivedValue=0)\n\n--and 1=2\n\"\"\")"
+    },
+    {
+      "cell_index": 9,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "ole_src_rawMatInventory_output_df"
+      ],
+      "functions": [
+        "sql"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ===================================================\n# OLE_SRC_rawMatInventory - OLE DB Source\n# ===================================================\n\nole_src_rawMatInventory_output_df = spark.sql(f\"\"\"\n    SELECT (Year * 100) + Week AS FiscalWeekKey,\n        OrgID,\n        UPPER(EntGradeGroup) EntGradeGroup,\n        InvBeginAmount AS BeginningWgt,\n        InvBeginValue AS BeginningAmount,\n        InvEndAmount AS EndingWgt,\n        InvEndValue AS EndingAmount,\n        InvConsumedAmount AS ConsumedWgt,\n        InvConsumedValue AS ConsumedAmount,\n\t    InvBeginInTransitGTs AS BeginningInTransitWgt,\n\t    InvBeginInTransitDollars AS BeginningInTransitDollars,\n\t    InvEndInTransitGTs AS EndingInTransitWgt,\n\t    InvEndInTransitDollars AS EndingInTransitDollars\n  FROM {federated_ods_catalog}.{SourceSchemaName}.ODS_NUE_RawMatInventory\n  WHERE DJJDeletedFlag=0 AND \n\t\tNOT (InvBeginValue=0 AND\n\t\t\tInvBeginAmount=0 AND\n\t\t\tInvEndValue=0 AND\n\t\t\tInvEndAmount=0 AND\n\t\t\tInvConsumedValue=0 AND\n\t\t\tInvConsumedAmount=0 AND\n\t\t\tInvBeginInTransitGTs=0 AND \n\t\t\tInvBeginInTransitDollars=0 AND\n\t\t\tInvEndInTransitGTs=0 AND \n\t\t\tInvEndInTransitDollars=0\n\t\t\t) \n\n--and year=2021 and week=20\n\"\"\")"
+    },
+    {
+      "cell_index": 10,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "der_inventory_output_df"
+      ],
+      "functions": [
+        "IntegerType",
+        "withColumn",
+        "DecimalType",
+        "cast",
+        "lit"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# =====================\n# DER Inventory\n# =====================\n\nder_inventory_output_df = ole_src_rawMaterialReceipt_output_df \\\n                            .withColumn(\"d_BeginningWgt\", F.lit(0).cast(IntegerType())) \\\n                            .withColumn(\"d_BeginningAmount\", F.lit(0.0000).cast(DecimalType(18,4))) \\\n                            .withColumn(\"d_ConsumedWgt\", F.lit(0).cast(IntegerType())) \\\n                            .withColumn(\"d_ConsumedAmount\", F.lit(0.0000).cast(DecimalType(18,4))) \\\n                            .withColumn(\"d_EndingWgt\", F.lit(0).cast(IntegerType())) \\\n                            .withColumn(\"d_EndingAmount\", F.lit(0.0000).cast(DecimalType(18,4))) \\\n                            .withColumn(\"d_BeginningInTransitWgt\", F.lit(0).cast(IntegerType())) \\\n                            .withColumn(\"d_BeginningInTransitDollars\", F.lit(0.0000).cast(DecimalType(18,4))) \\\n                            .withColumn(\"d_EndingInTransitWgt\", F.lit(0).cast(IntegerType())) \\\n                            .withColumn(\"d_EndingInTransitDollars\", F.lit(0.0000).cast(DecimalType(18,4)))"
+    },
+    {
+      "cell_index": 11,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "der_received_output_df"
+      ],
+      "functions": [
+        "IntegerType",
+        "withColumn",
+        "DecimalType",
+        "cast",
+        "lit"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# =====================\n# DER Received\n# =====================\n\nder_received_output_df = ole_src_rawMatInventory_output_df \\\n                            .withColumn(\"d_ReceivedWgt\", F.lit(0).cast(IntegerType())) \\\n                            .withColumn(\"d_ReceivedAmount\", F.lit(0.00).cast(DecimalType(18,2)))"
+    },
+    {
+      "cell_index": 12,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "der_convert_receiptWgt_output_df"
+      ],
+      "functions": [
+        "IntegerType",
+        "cast",
+        "withColumn",
+        "col"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ==================================\n# DER Convert ReceiptWgt to LBs\n# ==================================\n\nder_convert_receiptWgt_output_df = der_inventory_output_df \\\n                            .withColumn(\"d_ReceivedWgt\", (F.col('ReceivedWgt') * 2240).cast(IntegerType()))"
+    },
+    {
+      "cell_index": 13,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "der_convert_invwgts_output_df"
+      ],
+      "functions": [
+        "IntegerType",
+        "cast",
+        "withColumn",
+        "col"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# =============================\n# DER Convert InvWgts to LBs\n# =============================\n\nder_convert_invwgts_output_df = der_received_output_df \\\n                            .withColumn(\"d_BeginningWgt\", (F.col('BeginningWgt') * 2240).cast(IntegerType())) \\\n                            .withColumn(\"d_ConsumedWgt\", (F.col('ConsumedWgt') * 2240).cast(IntegerType())) \\\n                            .withColumn(\"d_EndingWgt\", (F.col('EndingWgt') * 2240).cast(IntegerType())) \\\n                            .withColumn(\"d_BeginningInTransitWgt\", (F.col('BeginningInTransitWgt') * 2240).cast(IntegerType())) \\\n                            .withColumn(\"d_EndingInTransitWgt\", (F.col('EndingInTransitWgt') * 2240).cast(IntegerType()))"
+    },
+    {
+      "cell_index": 14,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "union_output_df"
+      ],
+      "functions": [
+        "select",
+        "col",
+        "unionAll",
+        "alias"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ==============================\n# UNION Receipts & Inventory\n# ==============================\n\nunion_output_df = der_convert_receiptWgt_output_df.select(\n    F.col('OrgID'),\n    F.col('EntGradeGroup'),\n    F.col('FiscalWeekKey'),\n    F.col('BeginningAmount'),\n    F.col('EndingAmount'),\n    F.col('ConsumedAmount'),\n    F.col('d_ReceivedWgt'),\n    F.col('d_EndingWgt'),\n    F.col('d_ConsumedWgt'),\n    F.col('d_BeginningWgt'),\n    F.col('d_ReceivedAmount'),\n    F.col('d_BeginningInTransitWgt'),\n    F.col('d_EndingInTransitWgt'),\n    F.col('EndingInTransitDollars').alias('d_EndingInTransitDollars'),\n    F.col('BeginningInTransitDollars').alias('d_BeginningInTransitDollars')\n).unionAll(der_convert_invwgts_output_df.select(\n    F.col('OrgID'),\n    F.col('EntGradeGroup'),\n    F.col('FiscalWeekKey'),\n    F.col('d_BeginningAmount').alias('BeginningAmount'),\n    F.col('d_EndingAmount').alias('EndingAmount'),\n    F.col('d_ConsumedAmount').alias('ConsumedAmount'),\n    F.col('d_ReceivedWgt'),\n    F.col('d_EndingWgt'),\n    F.col('d_ConsumedWgt'),\n    F.col('d_BeginningWgt'),\n    F.col('ReceivedAmount').alias('d_ReceivedAmount'),\n    F.col('d_BeginningInTransitWgt'),\n    F.col('d_EndingInTransitWgt'),\n    F.col('d_EndingInTransitDollars'),\n    F.col('d_BeginningInTransitDollars')\n)\n)"
+    },
+    {
+      "cell_index": 15,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "dcnv_entGradeGroup"
+      ],
+      "functions": [
+        "StringType",
+        "cast",
+        "withColumn",
+        "col"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# =======================\n# DCNV EntGradeGroup\n# =======================\n\ndcnv_entGradeGroup = union_output_df \\\n                        .withColumn(\"c_EntGradeGroup\", F.col('EntGradeGroup').cast(StringType()))"
+    },
+    {
+      "cell_index": 16,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "csplit_2BUNDLES_output_df",
+        "csplit_2BUNDLES_default_output_df"
+      ],
+      "functions": [
+        "col",
+        "filter"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# =====================================================\n# csplit_2BUNDLES - Conditional Split Transformation\n# =====================================================\n\ncsplit_2BUNDLES_output_df = dcnv_entGradeGroup.filter(F.col(\"c_EntGradeGroup\") == \"#2 BUNDLES\")\ncsplit_2BUNDLES_default_output_df = dcnv_entGradeGroup.filter(F.col(\"c_EntGradeGroup\") != \"#2 BUNDLES\")"
+    },
+    {
+      "cell_index": 17,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "der_EntGradeGroup_2Bundles_output_df"
+      ],
+      "functions": [
+        "StringType",
+        "when",
+        "col",
+        "cast",
+        "withColumn",
+        "otherwise"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ==============================================================\n# DER_EntGradeGroup_2Bundles - Derived Column Transformation\n# ==============================================================\n\nder_EntGradeGroup_2Bundles_output_df = csplit_2BUNDLES_output_df \\\n    .withColumn(\n        \"c_EntGradeGroup\",\n        F.when(\n            (F.col(\"c_EntGradeGroup\") == \"#2 BUNDLES\") & (F.col(\"OrgID\") == 37),\n            \"#2 BUNDLES-SECONDARIES\"\n        ).otherwise(\"#2 BUNDLES-PRIMES\").cast(StringType())\n    )"
+    },
+    {
+      "cell_index": 18,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "union_2bundles_output_df"
+      ],
+      "functions": [
+        "select",
+        "unionAll"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ====================\n# UNION 2BUNDLES\n# ====================\n\nunion_2bundles_output_df = csplit_2BUNDLES_default_output_df.select(\n    'OrgID',\n    'EntGradeGroup',\n    'FiscalWeekKey',\n    'BeginningAmount',\n    'EndingAmount',\n    'ConsumedAmount',\n    'd_ReceivedWgt',\n    'd_EndingWgt',\n    'd_ConsumedWgt',\n    'd_BeginningWgt',\n    'd_ReceivedAmount',\n    'c_EntGradeGroup',\n    'd_BeginningInTransitWgt',\n    'd_EndingInTransitWgt',\n    'd_EndingInTransitDollars',\n    'd_BeginningInTransitDollars'\n).unionAll(der_EntGradeGroup_2Bundles_output_df.select(\n    'OrgID',\n    'EntGradeGroup',\n    'FiscalWeekKey',\n    'BeginningAmount',\n    'EndingAmount',\n    'ConsumedAmount',\n    'd_ReceivedWgt',\n    'd_EndingWgt',\n    'd_ConsumedWgt',\n    'd_BeginningWgt',\n    'd_ReceivedAmount',\n    'c_EntGradeGroup',\n    'd_BeginningInTransitWgt',\n    'd_EndingInTransitWgt',\n    'd_EndingInTransitDollars',\n    'd_BeginningInTransitDollars'\n    )\n)"
+    },
+    {
+      "cell_index": 19,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "lkp_enterprise_grade_group_key_ref_df",
+        "lkp_enterprise_grade_group_key_joined_df"
+      ],
+      "functions": [
+        "select",
+        "join",
+        "alias",
+        "col",
+        "sql"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ======================================================================\n# LKP_EnterpriseGradeGroupKey - Standard Lookup Transformation\n# ======================================================================\n\nlkp_enterprise_grade_group_key_ref_df = spark.sql(f\"\"\"\n                            SELECT EnterpriseGradeGroupKey, \n                                UPPER(EnterpriseGradeGroup) EnterpriseGradeGroup \n                            FROM {federated_starschema_catalog}.Brk.dimEnterpriseGradeGroup\n                        \"\"\")\n\nlkp_enterprise_grade_group_key_joined_df = union_2bundles_output_df.alias(\"inp\").join(\n    lkp_enterprise_grade_group_key_ref_df.alias(\"lkp\"),\n    F.col(\"inp.c_EntGradeGroup\") == F.col(\"lkp.EnterpriseGradeGroup\"),\n    \"left\"\n).select(\n    F.col(\"inp.*\"),\n    F.col(\"lkp.EnterpriseGradeGroupKey\").alias(\"EnterpriseGradeGroupKey\")\n)"
+    },
+    {
+      "cell_index": 20,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "lkp_consumer_num_joined_df",
+        "lkp_consumer_num_ref_df"
+      ],
+      "functions": [
+        "select",
+        "join",
+        "alias",
+        "col",
+        "sql"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ======================================================================\n# LKP_ConsumerNum - Standard Lookup Transformation\n# ======================================================================\n\nlkp_consumer_num_ref_df = spark.sql(f\"\"\"\n            SELECT CAST(Code AS INT) AS OrgID, CAST(DJJConsumerNumber AS STRING) AS ConsumerNum \n            FROM {federated_ods_catalog}.{SourceSchemaName}.ODS_MDS_NUEMillNames \n            WHERE DJJDeletedFlag=0\n        \"\"\")\n\nlkp_consumer_num_joined_df = lkp_enterprise_grade_group_key_joined_df.alias(\"inp\").join(\n    lkp_consumer_num_ref_df.alias(\"lkp\"),\n    F.col(\"inp.OrgID\") == F.col(\"lkp.OrgID\"),\n    \"left\"\n).select(\n    F.col(\"inp.*\"),\n    F.col(\"lkp.ConsumerNum\").alias(\"ConsumerNum\")\n)"
+    },
+    {
+      "cell_index": 21,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "lkp_consumer_key_joined_df",
+        "lkp_consumer_key_ref_df"
+      ],
+      "functions": [
+        "select",
+        "join",
+        "alias",
+        "col",
+        "sql"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ======================================================================\n# LKP_ConsumerKey - Standard Lookup Transformation\n# ======================================================================\n\nlkp_consumer_key_ref_df = spark.sql(f\"\"\"\n                            SELECT ConsumerKey, ConsumerID \n                            FROM {federated_starschema_catalog}.Brk.dimConsumer\n                        \"\"\")\n\nlkp_consumer_key_joined_df = lkp_enterprise_grade_group_key_joined_df.alias(\"inp\").join(\n    lkp_consumer_key_ref_df.alias(\"lkp\"),\n    F.col(\"inp.ConsumerNum\") == F.col(\"lkp.ConsumerID\"),\n    \"left\"\n).select(\n    F.col(\"inp.*\"),\n    F.col(\"lkp.ConsumerKey\").alias(\"ConsumerKey\")\n)"
+    },
+    {
+      "cell_index": 22,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "aggregated_output_df"
+      ],
+      "functions": [
+        "agg",
+        "alias",
+        "groupBy",
+        "sum"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ===============\n# Aggregate\n# ===============\n\naggregated_output_df = lkp_consumer_key_joined_df.groupBy(\n    'FiscalWeekKey', 'OrgID', 'ConsumerKey', 'EnterpriseGradeGroupKey', 'c_EntGradeGroup', 'ConsumerNum'\n).agg(\n    F.sum('BeginningAmount').alias('BeginningAmount'),\n    F.sum('EndingAmount').alias('EndingAmount'),\n    F.sum('ConsumedAmount').alias('ConsumedAmount'),\n    F.sum('d_ReceivedWgt').alias('d_ReceivedWgt'),\n    F.sum('d_EndingWgt').alias('d_EndingWgt'),\n    F.sum('d_ConsumedWgt').alias('d_ConsumedWgt'),\n    F.sum('d_BeginningWgt').alias('d_BeginningWgt'),\n    F.sum('d_ReceivedAmount').alias('d_ReceivedAmount'),\n    F.sum('d_BeginningInTransitWgt').alias('d_BeginningInTransitWgt'),\n    F.sum('d_EndingInTransitWgt').alias('d_EndingInTransitWgt'),\n    F.sum('d_EndingInTransitDollars').alias('d_EndingInTransitDollars'),\n    F.sum('d_BeginningInTransitDollars').alias('d_BeginningInTransitDollars')\n)"
+    },
+    {
+      "cell_index": 23,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "lkp_milintransit_adjustments_joined_df",
+        "lkp_milintransit_adjustments_ref_df"
+      ],
+      "functions": [
+        "select",
+        "join",
+        "alias",
+        "col",
+        "sql"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ================================================================\n# LKP MilInTransit Adjustments - Standard Lookup Transformation\n# ================================================================\n\nlkp_milintransit_adjustments_ref_df = spark.sql(f\"\"\"\n                SELECT (FiscalYear * 100) + FiscalWeek AS FiscalWeekKey, ConsumerID, \n                    CAST(UPPER(EntGradeGroup) AS VARCHAR(100)) AS EntGradeGroup, BeginningInTransitWgtGTs * 2240.0 AS BeginningInTransitWgtGTs,BeginningInTransitAmount,\n                    EndingInTransitWgtGTs * 2240.0 AS EndingInTransitWgtGTs,\n                    EndingInTransitAmount,\n                    AdjustmentType\n                FROM {federated_ods_catalog}.{SourceSchemaName}.ODS_NUE_MillInTransitAdjustment            \n            \"\"\")\n\nlkp_milintransit_adjustments_joined_df = aggregated_output_df.alias('inp').join(\n    lkp_milintransit_adjustments_ref_df.alias('lkp'),\n    (F.col(\"inp.FiscalWeekKey\") == F.col(\"lkp.FiscalWeekKey\")) & (F.col(\"inp.c_EntGradeGroup\") == F.col(\"lkp.EntGradeGroup\")) & (F.col(\"inp.ConsumerNum\") == F.col(\"lkp.ConsumerID\")),\n    \"left\"\n).select(\n    F.col(\"inp.*\"),\n    F.col(\"lkp.BeginningInTransitWgtGTs\").alias(\"BeginningInTransitWgtGTs_ADJ\"),\n    F.col(\"lkp.BeginningInTransitAmount\").alias(\"BeginningInTransitAmount_ADJ\"),\n    F.col(\"lkp.EndingInTransitWgtGTs\").alias(\"EndingInTransitWgtGTs_ADJ\"),\n    F.col(\"lkp.EndingInTransitAmount\").alias(\"EndingInTransitAmount_ADJ\"),\n    F.col(\"lkp.AdjustmentType\")\n)"
+    },
+    {
+      "cell_index": 24,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "der_adjusted_intransit_output_df"
+      ],
+      "functions": [
+        "when",
+        "col",
+        "isNull",
+        "DecimalType",
+        "cast",
+        "withColumn",
+        "otherwise"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# =========================================================\n# DER Adjusted InTransit - Derived Column Transformation\n# =========================================================\n\nder_adjusted_intransit_output_df = (\n    lkp_milintransit_adjustments_joined_df\n    .withColumn(\n        \"Adjusted_BeginInTransitWgt\",\n        F.when(\n            F.col(\"BeginningInTransitWgtGTs_ADJ\").isNull(),\n            F.col(\"d_BeginningInTransitWgt\")\n        )\n        .when(\n            F.col(\"AdjustmentType\") == \"Replacement\",\n            F.col(\"BeginningInTransitWgtGTs_ADJ\")\n        )\n        .otherwise(\n            F.col(\"d_BeginningInTransitWgt\") + F.col(\"BeginningInTransitWgtGTs_ADJ\")\n        ).cast(DecimalType(25,5))\n    )\n    .withColumn(\n        \"Adjusted_BeginInTransitAmount\",\n        F.when(\n            F.col(\"BeginningInTransitDollars_ADJ\").isNull(),\n            F.col(\"d_BeginningInTransitDollars\")\n        )\n        .when(\n            F.col(\"AdjustmentType\") == \"Replacement\",\n            F.col(\"BeginningInTransitDollars_ADJ\")\n        )\n        .otherwise(\n            F.col(\"d_BeginningInTransitDollars\") + F.col(\"BeginningInTransitDollars_ADJ\")\n        ).cast(DecimalType(19,4))\n    )\n    .withColumn(\n        \"Adjusted_EndingInTransitWgt\",\n        F.when(\n            F.col(\"EndingInTransitWgtGTs_ADJ\").isNull(),\n            F.col(\"d_EndingInTransitWgt\")\n        )\n        .when(\n            F.col(\"AdjustmentType\") == \"Replacement\",\n            F.col(\"EndingInTransitWgtGTs_ADJ\")\n        )\n        .otherwise(\n            F.col(\"d_EndingInTransitWgt\") + F.col(\"EndingInTransitWgtGTs_ADJ\")\n        ).cast(DecimalType(25,5))\n    )\n    .withColumn(\n        \"Adjusted_EndingInTransitAmount\",\n        F.when(\n            F.col(\"EndingInTransitDollars_ADJ\").isNull(),\n            F.col(\"d_EndingInTransitDollars\")\n        )\n        .when(\n            F.col(\"AdjustmentType\") == \"Replacement\",\n            F.col(\"EndingInTransitDollars_ADJ\")\n        )\n        .otherwise(\n            F.col(\"d_EndingInTransitDollars\") + F.col(\"EndingInTransitDollars_ADJ\")\n        ).cast(DecimalType(19,4))\n    )\n)"
+    },
+    {
+      "cell_index": 25,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "der_nulls_output_df"
+      ],
+      "functions": [
+        "IntegerType",
+        "cast",
+        "withColumn",
+        "coalesce"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# =========================================================\n# DER nulls - Derived Column Transformation\n# =========================================================\n\nder_nulls_output_df = der_adjusted_intransit_output_df \\\n    .withColumn(\n        \"EnterpriseGradeGroupKey\", \n        F.coalesce(EnterpriseGradeGroupKey, -1).cast(IntegerType())\n    ) \\\n    .withColumn(\n        \"ConsumerKey\", \n        F.coalesce(ConsumerKey, -1).cast(IntegerType())\n    )"
+    },
+    {
+      "cell_index": 26,
+      "imports": [],
+      "variables": [],
+      "dataframes": [],
+      "functions": [],
+      "magic_commands": [],
+      "code_snippet": "# =========================================================\n# DER Metadata - Derived Column Transformation\n# =========================================================\n\nder_metadata_output_df = der_nulls_output_df \\\n    .withColumn(\"DJJGeneratedFlag\", F.lit(0).cast(IntegerType()) )\n    .withColumn(\"ETLSSExecutionID\", F.lit(None).cast(IntegerType()))\n    .withColumn(\"DJJLastUpdateTime\", F.lit('{etl_runtime}').cast(TimestampType()) )"
+    },
+    {
+      "cell_index": 27,
+      "imports": [],
+      "variables": [],
+      "dataframes": [
+        "final_df"
+      ],
+      "functions": [
+        "IntegerType",
+        "LongType",
+        "TimestampType",
+        "select",
+        "createOrReplaceTempView",
+        "StringType",
+        "alias",
+        "col",
+        "sql",
+        "DecimalType",
+        "cast"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ============================================================\n# UPDATE AND INSERT RECORDS\n# ============================================================\n\nfinal_df = der_metadata_output_df.select(\n    F.col(\"FiscalWeekKey\").cast(IntegerType()),\n    F.col(\"OrgID\").cast(IntegerType()),\n    F.col(\"c_EntGradeGroup\").cast(StringType()).alias(\"EnterpriseGradeGroup\"),\n    F.col(\"EnterpriseGradeGroupKey\").cast(IntegerType()),\n    F.col(\"ConsumerKey\").cast(IntegerType()),\n    F.col(\"d_ReceivedWgt\").cast(LongType()).alias(\"ReceivedWgt\"),\n    F.col(\"d_ReceivedAmount\").cast(DecimalType(18, 2)).alias(\"ReceivedAmount\"),\n    F.col(\"d_BeginningWgt\").cast(LongType()).alias(\"BeginningWgt\"),\n    F.col(\"BeginningAmount\").cast(DecimalType(18, 4)).alias(\"BeginningAmount\"),\n    F.col(\"d_ConsumedWgt\").cast(LongType()).alias(\"ConsumedWgt\"),\n    F.col(\"ConsumedAmount\").cast(DecimalType(18, 4)).alias(\"ConsumedAmount\"),\n    F.col(\"d_EndingWgt\").cast(LongType()).alias(\"EndingWgt\"),\n    F.col(\"EndingAmount\").cast(DecimalType(18, 4)).alias(\"EndingAmount\"),\n    F.col(\"Adjusted_BeginInTransitWgt\").cast(IntegerType()).alias(\"BeginningInTransitWgt\"),\n    F.col(\"d_BeginningInTransitWgt\").cast(IntegerType()).alias(\"BeginningInTransitWgt_BeforeAdjustment\"),\n    F.col(\"Adjusted_BeginInTransitAmount\").cast(DecimalType(18, 4)).alias(\"BeginningInTransitAmount\"),\n    F.col(\"d_BeginningInTransitDollars\").cast(DecimalType(18, 4)).alias(\"BeginningInTransitAmount_BeforeAdjustment\"),\n    F.col(\"Adjusted_EndingInTransitWgt\").cast(IntegerType()).alias(\"EndingInTransitWgt\"),\n    F.col(\"d_EndingInTransitWgt\").cast(IntegerType()).alias(\"EndingInTransitWgt_BeforeAdjustment\"),\n    F.col(\"Adjusted_EndingInTransitAmount\").cast(DecimalType(18, 4)).alias(\"EndingInTransitAmount\"),\n    F.col(\"d_EndingInTransitDollars\").cast(DecimalType(18, 4)).alias(\"EndingInTransitAmount_BeforeAdjustment\"),\n    F.col(\"DJJGeneratedFlag\").cast(IntegerType()),\n    F.col(\"ETLSSExecutionID\").cast(LongType()),\n    F.col(\"DJJLastUpdateTime\").cast(TimestampType())\n)\n\nfinal_df.createOrReplaceTempView(\"merge_source_vw\")\n\nspark.sql(f\"\"\"\n    MERGE INTO {target_table} AS target\n    USING merge_source_vw AS source\n    ON target.FiscalWeekKey = source.FiscalWeekKey\n       AND target.OrgID = source.OrgID\n       AND target.EnterpriseGradeGroup = source.EnterpriseGradeGroup\n\n    WHEN MATCHED AND (\n        target.EnterpriseGradeGroupKey <> source.EnterpriseGradeGroupKey OR\n        target.ConsumerKey <> source.ConsumerKey OR\n        target.ReceivedWgt <> source.ReceivedWgt OR\n        target.ReceivedAmount <> source.ReceivedAmount OR\n        target.BeginningWgt <> source.BeginningWgt OR\n        target.BeginningAmount <> source.BeginningAmount OR\n        target.ConsumedWgt <> source.ConsumedWgt OR\n        target.ConsumedAmount <> source.ConsumedAmount OR\n        target.EndingWgt <> source.EndingWgt OR\n        target.EndingAmount <> source.EndingAmount OR\n        target.BeginningInTransitWgt <> source.BeginningInTransitWgt OR\n        target.BeginningInTransitWgt_BeforeAdjustment <> source.BeginningInTransitWgt_BeforeAdjustment OR\n        target.BeginningInTransitAmount <> source.BeginningInTransitAmount OR\n        target.BeginningInTransitAmount_BeforeAdjustment <> source.BeginningInTransitAmount_BeforeAdjustment OR\n        target.EndingInTransitWgt <> source.EndingInTransitWgt OR\n        target.EndingInTransitWgt_BeforeAdjustment <> source.EndingInTransitWgt_BeforeAdjustment OR\n        target.EndingInTransitAmount <> source.EndingInTransitAmount OR\n        target.EndingInTransitAmount_BeforeAdjustment <> source.EndingInTransitAmount_BeforeAdjustment\n    )\n    THEN UPDATE SET\n        target.EnterpriseGradeGroupKey = source.EnterpriseGradeGroupKey,\n        target.ConsumerKey = source.ConsumerKey,\n        target.ReceivedWgt = source.ReceivedWgt,\n        target.ReceivedAmount = source.ReceivedAmount,\n        target.BeginningWgt = source.BeginningWgt,\n        target.BeginningAmount = source.BeginningAmount,\n        target.ConsumedWgt = source.ConsumedWgt,\n        target.ConsumedAmount = source.ConsumedAmount,\n        target.EndingWgt = source.EndingWgt,\n        target.EndingAmount = source.EndingAmount,\n        target.BeginningInTransitWgt = source.BeginningInTransitWgt,\n        target.BeginningInTransitWgt_BeforeAdjustment = source.BeginningInTransitWgt_BeforeAdjustment,\n        target.BeginningInTransitAmount = source.BeginningInTransitAmount,\n        target.BeginningInTransitAmount_BeforeAdjustment = source.BeginningInTransitAmount_BeforeAdjustment,\n        target.EndingInTransitWgt = source.EndingInTransitWgt,\n        target.EndingInTransitWgt_BeforeAdjustment = source.EndingInTransitWgt_BeforeAdjustment,\n        target.EndingInTransitAmount = source.EndingInTransitAmount,\n        target.EndingInTransitAmount_BeforeAdjustment = source.EndingInTransitAmount_BeforeAdjustment,\n        target.DJJGeneratedFlag = source.DJJGeneratedFlag,\n        target.ETLSSExecutionID = source.ETLSSExecutionID,\n        target.EnrichedTimestampUTC = source.DJJLastUpdateTime\n\n    WHEN NOT MATCHED\n    THEN INSERT (\n        FiscalWeekKey,\n        OrgID,\n        EnterpriseGradeGroup,\n        EnterpriseGradeGroupKey,\n        ConsumerKey,\n        ReceivedWgt,\n        ReceivedAmount,\n        BeginningWgt,\n        BeginningAmount,\n        ConsumedWgt,\n        ConsumedAmount,\n        EndingWgt,\n        EndingAmount,\n        BeginningInTransitWgt,\n        BeginningInTransitWgt_BeforeAdjustment,\n        BeginningInTransitAmount,\n        BeginningInTransitAmount_BeforeAdjustment,\n        EndingInTransitWgt,\n        EndingInTransitWgt_BeforeAdjustment,\n        EndingInTransitAmount,\n        EndingInTransitAmount_BeforeAdjustment,\n        DJJGeneratedFlag,\n        ETLSSExecutionID,\n        EnrichedTimestampUTC\n    )\n    VALUES (\n        source.FiscalWeekKey,\n        source.OrgID,\n        source.EnterpriseGradeGroup,\n        source.EnterpriseGradeGroupKey,\n        source.ConsumerKey,\n        source.ReceivedWgt,\n        source.ReceivedAmount,\n        source.BeginningWgt,\n        source.BeginningAmount,\n        source.ConsumedWgt,\n        source.ConsumedAmount,\n        source.EndingWgt,\n        source.EndingAmount,\n        source.BeginningInTransitWgt,\n        source.BeginningInTransitWgt_BeforeAdjustment,\n        source.BeginningInTransitAmount,\n        source.BeginningInTransitAmount_BeforeAdjustment,\n        source.EndingInTransitWgt,\n        source.EndingInTransitWgt_BeforeAdjustment,\n        source.EndingInTransitAmount,\n        source.EndingInTransitAmount_BeforeAdjustment,\n        source.DJJGeneratedFlag,\n        source.ETLSSExecutionID,\n        source.DJJLastUpdateTime\n    )\n\"\"\")"
+    },
+    {
+      "cell_index": 28,
+      "imports": [],
+      "variables": [
+        "RowsDeleted",
+        "metrics",
+        "RowsInserted",
+        "RowsUpdated"
+      ],
+      "dataframes": [
+        "merge_history"
+      ],
+      "functions": [
+        "first",
+        "sql",
+        "int",
+        "print",
+        "filter",
+        "get"
+      ],
+      "magic_commands": [],
+      "code_snippet": "merge_history = spark.sql(f\"DESCRIBE HISTORY {enriched_catalog}.{DestinationSchemaName}.{DestinationTableName}\").filter(\"operation = 'MERGE'\").first()\nmetrics = merge_history[\"operationMetrics\"]\nRowsInserted = int(metrics.get(\"numTargetRowsInserted\", 0))\nRowsUpdated = int(metrics.get(\"numTargetRowsUpdated\", 0))\nRowsDeleted = int(metrics.get(\"numTargetRowsDeleted\", 0))\n\nprint(f\"MERGE completed - Inserted: {RowsInserted}, Updated: {RowsUpdated}, Deleted: {RowsDeleted}\")\n\nprint(\"ETL factInventorySnapshot completed successfully.\")"
+    },
+    {
+      "cell_index": 29,
+      "imports": [],
+      "variables": [
+        "metrics"
+      ],
+      "dataframes": [],
+      "functions": [
+        "end_execution_run"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ==================================\n# FINISH METADATA LOGGING\n# ==================================\n\nmetrics = {\n    \"rows_inserted\": RowsInserted,\n    \"rows_updated\": RowsUpdated,\n    \"rows_deleted\": RowsDeleted\n}\n\nend_execution_run(run_ctx, status=\"SUCCESS\", metrics=metrics)"
+    },
+    {
+      "cell_index": 30,
+      "imports": [],
+      "variables": [],
+      "dataframes": [],
+      "functions": [
+        "dropTempView"
+      ],
+      "magic_commands": [],
+      "code_snippet": "# ==================================\n# Cleanup: Drop temporary view\n# ==================================\n\nspark.catalog.dropTempView(\"merge_source_vw\")"
+    },
+    {
+      "cell_index": 31,
+      "imports": [],
+      "variables": [],
+      "dataframes": [],
+      "functions": [],
+      "magic_commands": [
+        "sql"
+      ],
+      "code_snippet": "%sql\ndrop table if exists djj_enriched_non_prod.NUE.fact_InventorySnapshot_temp"
+    }
+  ],
+  "imports": [
+    "uuid",
+    "pyspark.sql.types.*",
+    "delta.tables.DeltaTable",
+    "pyspark.sql.functions",
+    "datetime.datetime"
+  ],
+  "variables": [
+    "RowsInserted",
+    "platform",
+    "source_table",
+    "DestinationSchemaName",
+    "SourceTableName",
+    "run_ctx",
+    "metrics",
+    "DestinationTableName",
+    "layer",
+    "RowsUpdated",
+    "etl_runtime",
+    "enriched_catalog",
+    "target_table",
+    "proc",
+    "RowsDeleted",
+    "SourceSchemaName",
+    "federated_starschema_catalog",
+    "federated_ods_catalog"
+  ],
+  "dataframes": [
+    "aggregated_output_df",
+    "lkp_consumer_key_joined_df",
+    "lkp_consumer_num_ref_df",
+    "union_2bundles_output_df",
+    "der_adjusted_intransit_output_df",
+    "lkp_consumer_key_ref_df",
+    "der_inventory_output_df",
+    "csplit_2BUNDLES_output_df",
+    "dcnv_entGradeGroup",
+    "ole_src_rawMaterialReceipt_output_df",
+    "lkp_milintransit_adjustments_ref_df",
+    "lkp_milintransit_adjustments_joined_df",
+    "final_df",
+    "lkp_consumer_num_joined_df",
+    "der_received_output_df",
+    "der_EntGradeGroup_2Bundles_output_df",
+    "der_convert_receiptWgt_output_df",
+    "csplit_2BUNDLES_default_output_df",
+    "lkp_enterprise_grade_group_key_joined_df",
+    "union_output_df",
+    "der_nulls_output_df",
+    "merge_history",
+    "ole_src_rawMatInventory_output_df",
+    "der_convert_invwgts_output_df",
+    "lkp_enterprise_grade_group_key_ref_df"
+  ],
+  "functions": [
+    "select",
+    "createOrReplaceTempView",
+    "unionAll",
+    "coalesce",
+    "DecimalType",
+    "withColumn",
+    "now",
+    "LongType",
+    "sum",
+    "agg",
+    "sql",
+    "start_execution_run",
+    "otherwise",
+    "get",
+    "join",
+    "groupBy",
+    "isNull",
+    "lit",
+    "IntegerType",
+    "TimestampType",
+    "first",
+    "end_execution_run",
+    "StringType",
+    "alias",
+    "col",
+    "when",
+    "dropTempView",
+    "filter",
+    "cast",
+    "fact_InventorySnapshot_temp"
+  ],
+  "magic_commands": [
+    "sql",
+    "skip",
+    "run"
+  ],
+  "total_cells": 31
+}

@@ -1,0 +1,21 @@
+1. How to Add a New Document (URL) to the Vector DB
+If you find a new Databricks blog post or documentation page that the AI needs to learn, use the add_url_to_vector_db.py script. It will scrape the URL, chunk the text, and save it directly into rag/chroma_db.
+
+powershell
+
+
+.venv\Scripts\python scratch\add_url_to_vector_db.py "https://www.databricks.com/your-new-link"
+2. How to Inject an Explicit Syntax Rule (Text)
+If the URL doesn't contain the exact code syntax, or you just want to force a strict architectural rule (like we did with CREATE TEMPORARY TABLE), use the injection script. Just edit scratch/inject_syntax.py to contain your new rule, and run:
+
+powershell
+
+
+.venv\Scripts\python scratch\inject_syntax.py
+3. How to Search the Vector DB manually
+If you want to debug the Vector DB and see exactly what the AI will retrieve when it searches for a specific concept, use the query script. It will print the Top 5 chunks and their distances.
+
+powershell
+
+
+.venv\Scripts\python scratch\query_chroma.py "temporary table"

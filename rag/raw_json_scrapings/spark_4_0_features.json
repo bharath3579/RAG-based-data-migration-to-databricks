@@ -1,0 +1,44 @@
+[
+  {
+    "feature_name": "Scala 2.13 Default & Client Parity",
+    "category": "Scala / Core",
+    "url": "https://spark.apache.org/releases/spark-release-4-0-0.html",
+    "description": "Spark drops Scala 2.12, moving exclusively to Scala 2.13 as the default. Additionally, the Scala Connect client now has full API parity with the classic Dataset/DataFrame API."
+  },
+  {
+    "feature_name": "VARIANT Data Type",
+    "category": "Spark SQL",
+    "url": "https://docs.databricks.com/en/sql/language-manual/data-types/variant-type.html",
+    "description": "Introduction of the native VARIANT data type to support highly flexible, semi-structured data operations natively in Spark. Used with PARSE_JSON to store schema-less JSON efficiently."
+  },
+  {
+    "feature_name": "SQL Scripting (Control Flow & Variables)",
+    "category": "Spark SQL",
+    "url": "https://docs.databricks.com/en/sql/language-manual/sql-scripting/index.html",
+    "description": "Writing multi-step SQL workflows is easier in Spark 4.0 thanks to new SQL scripting capabilities. Execute multi-statement SQL scripts with local variables (DECLARE, SET VAR) and control flow (IF/ELSE, WHILE loops), completely replacing the need for many legacy stored procedures."
+  },
+  {
+    "feature_name": "Catalog APIs for Stored Procedures",
+    "category": "Connectors / Data Sources",
+    "url": "https://spark.apache.org/releases/spark-release-4-0-0.html",
+    "description": "Added Catalog APIs for loading stored procedures, expanding DSv2 capabilities to manage procedural execution externally."
+  },
+  {
+    "feature_name": "Native PySpark Plotting API",
+    "category": "PySpark",
+    "url": "https://spark.apache.org/docs/latest/api/python/getting_started/quickstart_ps.html#Plotting",
+    "description": "Introduction of a fully built-in PySpark Plotting API, supporting KDE, density, line, bar, and histogram plots natively via Plotly backends."
+  },
+  {
+    "feature_name": "Built-in XML Support",
+    "category": "Connectors",
+    "url": "https://docs.databricks.com/en/query/formats/xml.html",
+    "description": "Fully built-in support for reading and writing XML files via spark.read.format('xml') and spark.write.format('xml'), eliminating third-party libraries. Functions like schema_of_xml and from_xml are natively integrated."
+  },
+  {
+    "feature_name": "Arbitrary State API v2",
+    "category": "Structured Streaming",
+    "url": "https://databricks.com/blog/arbitrary-state-processing-structured-streaming",
+    "description": "Redesign of the state management API allowing multiple state variables, Map states, and flexible column families natively in the state store for complex event processing."
+  }
+]

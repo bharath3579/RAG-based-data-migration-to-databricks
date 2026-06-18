@@ -1,0 +1,179 @@
+{
+  "file_path": "input\\pyspark_input_files\\fact_inventorysnapshot.ipynb",
+  "source_platform": "SQL Server",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "source_table": "djj_ods.dbo.ODS_CORE_User_Demographic",
+    "target_table": {
+      "columns": [
+        "FiscalWeekKey",
+        "OrgID",
+        "EnterpriseGradeGroup",
+        "EnterpriseGradeGroupKey",
+        "ConsumerKey",
+        "ReceivedWgt",
+        "ReceivedAmount",
+        "BeginningWgt",
+        "BeginningAmount",
+        "ConsumedWgt",
+        "ConsumedAmount",
+        "EndingWgt",
+        "EndingAmount",
+        "BeginningInTransitWgt",
+        "BeginningInTransitWgt_BeforeAdjustment",
+        "BeginningInTransitAmount",
+        "BeginningInTransitAmount_BeforeAdjustment",
+        "EndingInTransitWgt",
+        "EndingInTransitWgt_BeforeAdjustment",
+        "EndingInTransitAmount",
+        "EndingInTransitAmount_BeforeAdjustment",
+        "DJJGeneratedFlag",
+        "ETLSSExecutionID",
+        "EnrichedTimestampUTC"
+      ]
+    },
+    "djj_enriched_non_prod.NUE.fact_InventorySnapshot_temp": [
+      "*"
+    ],
+    "djj_starschema.NUE.factInventorySnapshot": [
+      "*",
+      "DJJLastUpdateTime"
+    ],
+    "tables": [
+      "ODS_NUE_RawMatInventory"
+    ],
+    "schema": "{federated_ods_catalog}.{SourceSchemaName}",
+    "schemas": [
+      "{federated_ods_catalog}.{SourceSchemaName}"
+    ],
+    "Brk.dimEnterpriseGradeGroup": [
+      "EnterpriseGradeGroupKey",
+      "EnterpriseGradeGroup"
+    ],
+    "union_2bundles_output_df": [
+      "c_EntGradeGroup"
+    ],
+    "federated_ods_catalog": {
+      "SourceSchemaName": {
+        "ODS_MDS_NUEMillNames": [
+          "Code",
+          "DJJConsumerNumber",
+          "DJJDeletedFlag"
+        ]
+      }
+    },
+    "lkp_enterprise_grade_group_key_joined_df": [
+      "OrgID"
+    ],
+    "Brk.dimConsumer": [
+      "ConsumerKey",
+      "ConsumerID"
+    ],
+    "dataframes": [
+      "der_nulls_output_df",
+      "der_adjusted_intransit_output_df"
+    ],
+    "federated_ods_catalog.{SourceSchemaName}.ODS_NUE_MillInTransitAdjustment": {
+      "columns": [
+        "FiscalYear",
+        "FiscalWeek",
+        "ConsumerID",
+        "EntGradeGroup",
+        "BeginningInTransitWgtGTs",
+        "BeginningInTransitAmount",
+        "EndingInTransitWgtGTs",
+        "EndingInTransitAmount",
+        "AdjustmentType"
+      ]
+    },
+    "aggregated_output_df": {
+      "columns": [
+        "FiscalWeekKey",
+        "c_EntGradeGroup",
+        "ConsumerNum"
+      ]
+    },
+    "columns": [
+      "EnterpriseGradeGroupKey",
+      "ConsumerKey"
+    ],
+    "merge_source_vw": {
+      "columns": [
+        "FiscalWeekKey",
+        "OrgID",
+        "EnterpriseGradeGroup",
+        "EnterpriseGradeGroupKey",
+        "ConsumerKey",
+        "ReceivedWgt",
+        "ReceivedAmount",
+        "BeginningWgt",
+        "BeginningAmount",
+        "ConsumedWgt",
+        "ConsumedAmount",
+        "EndingWgt",
+        "EndingAmount",
+        "BeginningInTransitWgt",
+        "BeginningInTransitWgt_BeforeAdjustment",
+        "BeginningInTransitAmount",
+        "BeginningInTransitAmount_BeforeAdjustment",
+        "EndingInTransitWgt",
+        "EndingInTransitWgt_BeforeAdjustment",
+        "EndingInTransitAmount",
+        "EndingInTransitAmount_BeforeAdjustment",
+        "DJJGeneratedFlag",
+        "ETLSSExecutionID",
+        "DJJLastUpdateTime"
+      ]
+    },
+    "enriched_catalog": {
+      "DestinationSchemaName": {
+        "DestinationTableName": [
+          "operation",
+          "operationMetrics"
+        ]
+      }
+    },
+    "djj_enriched_non_prod": {
+      "NUE": [
+        "fact_InventorySnapshot_temp"
+      ]
+    }
+  },
+  "functions": [
+    "select",
+    "createOrReplaceTempView",
+    "unionAll",
+    "coalesce",
+    "DecimalType",
+    "withColumn",
+    "LongType",
+    "sum",
+    "agg",
+    "sql",
+    "start_execution_run",
+    "print",
+    "datetime.now",
+    "otherwise",
+    "get",
+    "join",
+    "UPPER",
+    "groupBy",
+    "isNull",
+    "int",
+    "lit",
+    "IntegerType",
+    "TimestampType",
+    "first",
+    "end_execution_run",
+    "StringType",
+    "alias",
+    "col",
+    "when",
+    "dropTempView",
+    "filter",
+    "cast"
+  ],
+  "technical_summary": "Cell 1:\n[SETUP] Imports functions as F from pyspark.sql. Imports all types from pyspark.sql.types. Imports datetime from datetime. Imports DeltaTable from delta.tables. Imports uuid.\n\nCell 2:\n[SETUP] Assigns federated_ods_catalog as 'djj_ods'. Assigns SourceSchemaName as 'dbo'. Assigns SourceTableName as 'ODS_CORE_User_Demographic'. Assigns enriched_catalog as 'djj_enriched_non_prod'. Assigns DestinationSchemaName as 'nue'. Assigns DestinationTableName as 'fact_InventorySnapshot_temp'. Assigns federated_starschema_catalog as 'djj_starschema'. Assigns etl_runtime as the current datetime using datetime.now(). Assigns layer as 'enriched'. Constructs source_table using federated_ods_catalog, SourceSchemaName, and SourceTableName. Constructs target_table using enriched_catalog, DestinationSchemaName, and DestinationTableName. Assigns proc as 'incremental'. Assigns platform as 'mssql'.\n\nCell 3:\n[LOGGING] Executes magic command: %skip. [LOGGING] Executes magic command: %run ../Metadata_Logger/execution_logger\n\nCell 4:\n[LOGGING] Executes magic command: %run \"Workspace/Shared/DJJ Migration/Metadata_Logger/execution_logger\"\n\nCell 5:\n[LOGGING] Calls function start_execution_run with layer=layer, source_table=source_table, target_table=target_table, proc=proc, platform=platform and assigns the result to run_ctx.\n\nCell 6:\n[WRITE] Executes magic command: %sql CREATE OR REPLACE TABLE djj_enriched_non_prod.NUE.fact_InventorySnapshot_temp with columns FiscalWeekKey, OrgID, EnterpriseGradeGroup, EnterpriseGradeGroupKey, ConsumerKey, ReceivedWgt, ReceivedAmount, BeginningWgt, BeginningAmount, ConsumedWgt, ConsumedAmount, EndingWgt, EndingAmount, BeginningInTransitWgt, BeginningInTransitWgt_BeforeAdjustment, BeginningInTransitAmount, BeginningInTransitAmount_BeforeAdjustment, EndingInTransitWgt, EndingInTransitWgt_BeforeAdjustment, EndingInTransitAmount, EndingInTransitAmount_BeforeAdjustment, DJJGeneratedFlag, ETLSSExecutionID, EnrichedTimestampUTC and primary key (FiscalWeekKey, OrgID, EnterpriseGradeGroup) USING DELTA.\n\nCell 7:\n[WRITE] Executes magic command: %sql. Executes SQL: insert into djj_enriched_non_prod.NUE.fact_InventorySnapshot_temp SELECT * FROM djj_starschema.NUE.factInventorySnapshot WHERE DJJLastUpdateTime <= '2026-05-10 22:53:22.983'\n\nCell 8:\n[READ] Executes spark.sql() to read from ODS_NUE_RawMaterialReceipt table. SELECTs columns: (Year * 100) + Week AS FiscalWeekKey, OrgID, UPPER(EntGradeGroup) AS EntGradeGroup, ReceivedAmount AS ReceivedWgt, ReceivedValue AS ReceivedAmount. Applies WHERE conditions: DJJDeletedFlag = 0 and NOT (ReceivedAmount = 0 AND ReceivedValue = 0). The result is stored in ole_src_rawMaterialReceipt_output_df.\n\nCell 9:\n[READ] Executes spark.sql to read from ODS_NUE_RawMatInventory table. SELECTs columns: (Year * 100) + Week AS FiscalWeekKey, OrgID, UPPER(EntGradeGroup) AS EntGradeGroup, InvBeginAmount AS BeginningWgt, InvBeginValue AS BeginningAmount, InvEndAmount AS EndingWgt, InvEndValue AS EndingAmount, InvConsumedAmount AS ConsumedWgt, InvConsumedValue AS ConsumedAmount, InvBeginInTransitGTs AS BeginningInTransitWgt, InvBeginInTransitDollars AS BeginningInTransitDollars, InvEndInTransitGTs AS EndingInTransitWgt, InvEndInTransitDollars AS EndingInTransitDollars. Applies WHERE conditions: DJJDeletedFlag = 0 and NOT (all specified columns equal to 0). Stores result in ole_src_rawMatInventory_output_df.\n\nCell 10:\n[TRANSFORM] Creates der_inventory_output_df by adding 10 new columns to ole_src_rawMaterialReceipt_output_df with literal values: d_BeginningWgt = 0 (IntegerType), d_BeginningAmount = 0.0000 (DecimalType(18,4)), d_ConsumedWgt = 0 (IntegerType), d_ConsumedAmount = 0.0000 (DecimalType(18,4)), d_EndingWgt = 0 (IntegerType), d_EndingAmount = 0.0000 (DecimalType(18,4)), d_BeginningInTransitWgt = 0 (IntegerType), d_BeginningInTransitDollars = 0.0000 (DecimalType(18,4)), d_EndingInTransitWgt = 0 (IntegerType), d_EndingInTransitDollars = 0.0000 (DecimalType(18,4))\n\nCell 11:\n[TRANSFORM] Creates der_received_output_df by transforming ole_src_rawMatInventory_output_df. Adds column 'd_ReceivedWgt' with literal value 0 cast to IntegerType. Adds column 'd_ReceivedAmount' with literal value 0.00 cast to DecimalType(18,2).\n\nCell 12:\n[TRANSFORM] Creates dataframe der_convert_receiptWgt_output_df by applying withColumn operation on der_inventory_output_df. It adds a new column 'd_ReceivedWgt' which is the product of 'ReceivedWgt' column and 2240, cast to IntegerType().\n\nCell 13:\n[TRANSFORM] Creates der_convert_invwgts_output_df by transforming der_received_output_df. Adds five new columns: d_BeginningWgt, d_ConsumedWgt, d_EndingWgt, d_BeginningInTransitWgt, and d_EndingInTransitWgt. Each new column is calculated by multiplying the corresponding original column (BeginningWgt, ConsumedWgt, EndingWgt, BeginningInTransitWgt, EndingInTransitWgt) by 2240 and casting the result to IntegerType.\n\nCell 14:\n[MERGE] Selects columns from der_convert_receiptWgt_output_df: OrgID, EntGradeGroup, FiscalWeekKey, BeginningAmount, EndingAmount, ConsumedAmount, d_ReceivedWgt, d_EndingWgt, d_ConsumedWgt, d_BeginningWgt, d_ReceivedAmount, d_BeginningInTransitWgt, d_EndingInTransitWgt, EndingInTransitDollars (aliased as d_EndingInTransitDollars), BeginningInTransitDollars (aliased as d_BeginningInTransitDollars). Selects columns from der_convert_invwgts_output_df: OrgID, EntGradeGroup, FiscalWeekKey, d_BeginningAmount (aliased as BeginningAmount), d_EndingAmount (aliased as EndingAmount), d_ConsumedAmount (aliased as ConsumedAmount), d_ReceivedWgt, d_EndingWgt, d_ConsumedWgt, d_BeginningWgt, ReceivedAmount (aliased as d_ReceivedAmount), d_BeginningInTransitWgt, d_EndingInTransitWgt, d_EndingInTransitDollars, d_BeginningInTransitDollars. Performs unionAll on the two DataFrames and assigns the result to union_output_df.\n\nCell 15:\n[TRANSFORM] Creates dataframe dcnv_entGradeGroup by deriving from union_output_df. Adds column 'c_EntGradeGroup' by casting 'EntGradeGroup' to StringType.\n\nCell 16:\n[TRANSFORM] Creates dataframe 'csplit_2BUNDLES_output_df' by filtering 'dcnv_entGradeGroup' where column 'c_EntGradeGroup' equals '#2 BUNDLES'. [TRANSFORM] Creates dataframe 'csplit_2BUNDLES_default_output_df' by filtering 'dcnv_entGradeGroup' where column 'c_EntGradeGroup' does not equal '#2 BUNDLES'.\n\nCell 17:\n[TRANSFORM] Derives a new column 'c_EntGradeGroup' in 'der_EntGradeGroup_2Bundles_output_df' by transforming 'csplit_2BUNDLES_output_df'. It checks if 'c_EntGradeGroup' equals '#2 BUNDLES' and 'OrgID' equals 37, then assigns '#2 BUNDLES-SECONDARIES', otherwise assigns '#2 BUNDLES-PRIMES'. The result is cast to StringType().\n\nCell 18:\n[TRANSFORM] Selects columns from csplit_2BUNDLES_default_output_df. Selects columns from der_EntGradeGroup_2Bundles_output_df. Performs unionAll on the two resulting DataFrames and assigns to union_2bundles_output_df. The selected columns are: 'OrgID', 'EntGradeGroup', 'FiscalWeekKey', 'BeginningAmount', 'EndingAmount', 'ConsumedAmount', 'd_ReceivedWgt', 'd_EndingWgt', 'd_ConsumedWgt', 'd_BeginningWgt', 'd_ReceivedAmount', 'c_EntGradeGroup', 'd_BeginningInTransitWgt', 'd_EndingInTransitWgt', 'd_EndingInTransitDollars', 'd_BeginningInTransitDollars'.\n\nCell 19:\n[READ] Creates dataframe lkp_enterprise_grade_group_key_ref_df by executing spark.sql to SELECT EnterpriseGradeGroupKey and UPPER(EnterpriseGradeGroup) AS EnterpriseGradeGroup FROM {federated_starschema_catalog}.Brk.dimEnterpriseGradeGroup. [MERGE] Creates dataframe lkp_enterprise_grade_group_key_joined_df by performing a left join between union_2bundles_output_df (aliased as 'inp') and lkp_enterprise_grade_group_key_ref_df (aliased as 'lkp') on inp.c_EntGradeGroup == lkp.EnterpriseGradeGroup, then SELECTs inp.* and lkp.EnterpriseGradeGroupKey AS EnterpriseGradeGroupKey.\n\nCell 20:\n[READ] Executes spark.sql: SELECTs CAST(Code AS INT) AS OrgID, CAST(DJJConsumerNumber AS STRING) AS ConsumerNum FROM {federated_ods_catalog}.{SourceSchemaName}.ODS_MDS_NUEMillNames WHERE DJJDeletedFlag=0. [TRANSFORM] Creates lkp_consumer_num_ref_df. [MERGE] Performs left join on lkp_enterprise_grade_group_key_joined_df and lkp_consumer_num_ref_df on OrgID. [TRANSFORM] Selects all columns from lkp_enterprise_grade_group_key_joined_df and lkp.ConsumerNum as ConsumerNum. Creates lkp_consumer_num_joined_df.\n\nCell 21:\n[READ] Executes spark.sql to SELECT ConsumerKey, ConsumerID FROM {federated_starschema_catalog}.Brk.dimConsumer. [MERGE] Performs a left join between lkp_enterprise_grade_group_key_joined_df and lkp_consumer_key_ref_df on the condition inp.ConsumerNum == lkp.ConsumerID. Selects all columns from inp and lkp.ConsumerKey aliased as ConsumerKey.\n\nCell 22:\n[TRANSFORM] Groups lkp_consumer_key_joined_df by 'FiscalWeekKey', 'OrgID', 'ConsumerKey', 'EnterpriseGradeGroupKey', 'c_EntGradeGroup', 'ConsumerNum'. Aggregates sum of 'BeginningAmount', 'EndingAmount', 'ConsumedAmount', 'd_ReceivedWgt', 'd_EndingWgt', 'd_ConsumedWgt', 'd_BeginningWgt', 'd_ReceivedAmount', 'd_BeginningInTransitWgt', 'd_EndingInTransitWgt', 'd_EndingInTransitDollars', 'd_BeginningInTransitDollars' with respective aliases. Result stored in aggregated_output_df.\n\nCell 23:\n[READ] Executes spark.sql to read from {federated_ods_catalog}.{SourceSchemaName}.ODS_NUE_MillInTransitAdjustment, selecting FiscalYear, FiscalWeek, ConsumerID, EntGradeGroup, BeginningInTransitWgtGTs, BeginningInTransitAmount, EndingInTransitWgtGTs, EndingInTransitAmount, AdjustmentType. [TRANSFORM] Applies transformations: (FiscalYear * 100) + FiscalWeek AS FiscalWeekKey, CAST(UPPER(EntGradeGroup) AS VARCHAR(100)) AS EntGradeGroup, BeginningInTransitWgtGTs * 2240.0 AS BeginningInTransitWgtGTs, EndingInTransitWgtGTs * 2240.0 AS EndingInTransitWgtGTs. [MERGE] Joins aggregated_output_df with lkp_milintransit_adjustments_ref_df on inp.FiscalWeekKey == lkp.FiscalWeekKey, inp.c_EntGradeGroup == lkp.EntGradeGroup, and inp.ConsumerNum == lkp.ConsumerID using a left join. [TRANSFORM] Selects all columns from inp and specific columns from lkp, aliasing them as BeginningInTransitWgtGTs_ADJ, BeginningInTransitAmount_ADJ, EndingInTransitWgtGTs_ADJ, EndingInTransitAmount_ADJ, AdjustmentType.\n\nCell 24:\n[TRANSFORM] Creates der_adjusted_intransit_output_df by transforming lkp_milintransit_adjustments_joined_df. Adds four new columns: 'Adjusted_BeginInTransitWgt', 'Adjusted_BeginInTransitAmount', 'Adjusted_EndingInTransitWgt', 'Adjusted_EndingInTransitAmount'. For each new column, applies a conditional logic based on 'AdjustmentType' and the presence of '_ADJ' columns. If '_ADJ' column is null, uses the 'd_' column value. If 'AdjustmentType' is 'Replacement', uses the '_ADJ' column value. Otherwise, sums the 'd_' and '_ADJ' column values. Each new column is cast to a specific DecimalType.\n\nCell 25:\n[TRANSFORM] Creates der_nulls_output_df by transforming der_adjusted_intransit_output_df. Replaces nulls in EnterpriseGradeGroupKey and ConsumerKey with -1 and casts them to IntegerType().\n\nCell 26:\n[TRANSFORM] Creates der_metadata_output_df by transforming der_nulls_output_df. Adds column 'DJJGeneratedFlag' with literal value 0 cast to IntegerType. Adds column 'ETLSSExecutionID' with literal value None cast to IntegerType. Adds column 'DJJLastUpdateTime' with literal value '{etl_runtime}' cast to TimestampType.\n\nCell 27:\n[TRANSFORM] Selects columns from der_metadata_output_df and casts them to specific data types to create final_df. [WRITE] Creates a temporary view merge_source_vw from final_df. [MERGE] Executes a MERGE INTO statement on target_table using merge_source_vw as the source, matching on FiscalWeekKey, OrgID, and EnterpriseGradeGroup. When matched and source columns have changed, updates the target table with new values. When not matched, inserts new records into the target table with the specified columns.\n\nCell 28:\n[READ] Executes spark.sql query: DESCRIBE HISTORY enriched_catalog.DestinationSchemaName.DestinationTableName. [TRANSFORM] Filters the result where operation = 'MERGE'. [TRANSFORM] Retrieves the first row. Retrieves operationMetrics from the merge_history dataframe. Retrieves numTargetRowsInserted, numTargetRowsUpdated, numTargetRowsDeleted from operationMetrics and assigns them to RowsInserted, RowsUpdated, RowsDeleted respectively. [LOGGING] Prints the merge operation metrics: Inserted: RowsInserted, Updated: RowsUpdated, Deleted: RowsDeleted. [LOGGING] Prints: ETL factInventorySnapshot completed successfully.\n\nCell 29:\n[LOGGING] Creates a dictionary named metrics with keys 'rows_inserted', 'rows_updated', 'rows_deleted' and assigns them values from RowsInserted, RowsUpdated, RowsDeleted respectively. Calls the function end_execution_run with arguments run_ctx, status=\"SUCCESS\", and metrics=metrics.\n\nCell 30:\n[CLEANUP] Drops the temporary view named \"merge_source_vw\" using spark.catalog.dropTempView.\n\nCell 31:\n[WRITE] Executes magic command: %sql drop table if exists djj_enriched_non_prod.NUE.fact_InventorySnapshot_temp. Drops the table 'fact_InventorySnapshot_temp' in the schema 'NUE' of the catalog 'djj_enriched_non_prod' if it exists.",
+  "summary_error": null
+}
