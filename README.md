@@ -35,80 +35,80 @@ The following diagram illustrates the automated Waterfall Architecture of the `m
 ```mermaid
 flowchart TD
     %% Initial Startup
-    Start((Start)) --> Init[Load Environment Variables\nmain.py]
+    Start(("Start")) --> Init["Load Environment Variables\nmain.py"]
     
     %% 1. User Prompts (The ONLY Interaction)
-    Init --> Prompts[/Prompt User:\n1. Input Directory\n2. Source Platform\n3. Output Format\n4. Execute till what step? /]
-    Prompts --> Main_Discover[Discover Files in Input Directory]
+    Init --> Prompts[/"Prompt User:\n1. Input Directory\n2. Source Platform\n3. Output Format\n4. Execute till what step? "/]
+    Prompts --> Main_Discover["Discover Files in Input Directory"]
     
     %% Main File Loop
-    Main_Discover --> Main_Loop{More files to process?}
+    Main_Discover --> Main_Loop{"More files to process?"}
     
     %% Read File
-    Main_Loop -- Yes --> ReadFile[/Read source code from file/]
+    Main_Loop -- Yes --> ReadFile[/"Read source code from file"/]
     ReadFile --> Step1_Parse
     
     %% === THE WATERFALL PIPELINE ===
-    subgraph Core Pipeline
+    subgraph Core_Pipeline [Core Pipeline]
         %% Step 1: Parser
-        Step1_Parse[Extract AST using Parser]
-        Step1_Parse --> CheckParser{Execute till Parser?}
+        Step1_Parse["Extract AST using Parser"]
+        Step1_Parse --> CheckParser{"Execute till Parser?"}
         
         %% Step 2: Summarizer
-        CheckParser -- No --> Step2_Summ[Run AI Summarizer]
-        Step2_Summ --> CheckSummary{Execute till Summary?}
+        CheckParser -- No --> Step2_Summ["Run AI Summarizer"]
+        Step2_Summ --> CheckSummary{"Execute till Summary?"}
         
         %% Step 3: Converter Setup & Translation
-        CheckSummary -- No --> Step3_Conv[Initialize SchemaMapper & Dialect Rules]
-        Step3_Conv --> GenTestCases[LLM: Generate Mock Test Cases\nSerialize to CSVs]
-        GenTestCases --> TransLoopInit[Start Attempt Loop]
+        CheckSummary -- No --> Step3_Conv["Initialize SchemaMapper & Dialect Rules"]
+        Step3_Conv --> GenTestCases["LLM: Generate Mock Test Cases\nSerialize to CSVs"]
+        GenTestCases --> TransLoopInit["Start Attempt Loop"]
         
-        TransLoopInit --> Step4_Trans[Translation Agent\nConvert Code]
+        TransLoopInit --> Step4_Trans["Translation Agent\nConvert Code"]
         
         %% Step 4: Validation Check
-        Step4_Trans --> CheckConvert{Execute till Convert\n(Skip Validation)?}
+        Step4_Trans --> CheckConvert{"Execute till Convert\n(Skip Validation)?"}
         
-        CheckConvert -- No --> Step5_Val[Dual-Engine Validation\nRun Mock Data against both engines]
-        Step5_Val --> ValCheck{Validation Passed?}
+        CheckConvert -- No --> Step5_Val["Dual-Engine Validation\nRun Mock Data against both engines"]
+        Step5_Val --> ValCheck{"Validation Passed?"}
         
         %% === AUTOMATIC FEEDBACK LOOP (NO USER) ===
-        ValCheck -- No --> ErrorCapture[Capture Error/Mismatch Data]
-        ErrorCapture --> SetupCheck{Setup/Data Quality Error?}
-        SetupCheck -- Yes --> RegenTest[Regenerate Mock Test Cases] --> RetryCheck
+        ValCheck -- No --> ErrorCapture["Capture Error/Mismatch Data"]
+        ErrorCapture --> SetupCheck{"Setup/Data Quality Error?"}
+        SetupCheck -- Yes --> RegenTest["Regenerate Mock Test Cases"] --> RetryCheck
         SetupCheck -- No --> RetryCheck
         
-        RetryCheck{Attempt < Max Retries?}
-        RetryCheck -- Yes --> GenFeedback[Send to Summarizer:\nUse Error Guide + testcases\nto generate internal feedback]
-        GenFeedback --> PassFeedback[Send feedback automatically\nback to Converter LLM]
+        RetryCheck{"Attempt < Max Retries?"}
+        RetryCheck -- Yes --> GenFeedback["Send to Summarizer:\nUse Error Guide + testcases\nto generate internal feedback"]
+        GenFeedback --> PassFeedback["Send feedback automatically\nback to Converter LLM"]
         PassFeedback --> Step4_Trans
         
         %% Loop exhausted or passed
-        RetryCheck -- No --> LoopExit((Final Status: Failed))
-        ValCheck -- Yes --> LoopExitPass((Final Status: Success))
+        RetryCheck -- No --> LoopExit(("Final Status: Failed"))
+        ValCheck -- Yes --> LoopExitPass(("Final Status: Success"))
     end
     
     %% === FILE SAVING & OUTPUT ===
     
     %% Parser Only Exit
-    CheckParser -- Yes --> SaveJSON[Save parser_output JSON]
+    CheckParser -- Yes --> SaveJSON["Save parser_output JSON"]
     SaveJSON --> Main_Loop
     
     %% Summary Only Exit
-    CheckSummary -- Yes --> SaveJSONSumm[Save parser & summary JSONs\nUpdate Summary Excel]
+    CheckSummary -- Yes --> SaveJSONSumm["Save parser & summary JSONs\nUpdate Summary Excel"]
     SaveJSONSumm --> Main_Loop
     
     %% Convert / Full Exit
-    CheckConvert -- Yes --> FinalSave[Build Final Summary Payload\nSave JSONs\nWrite Translated Code to File]
+    CheckConvert -- Yes --> FinalSave["Build Final Summary Payload\nSave JSONs\nWrite Translated Code to File"]
     LoopExit --> FinalSave
     LoopExitPass --> FinalSave
     
-    FinalSave --> ExcelAppend[Append to validation & summarizer Excels]
-    ExcelAppend -.-> ExcelNote>If Failed: Mark as 'Did Not Pass' \nand write Reason in new column]
+    FinalSave --> ExcelAppend["Append to validation & summarizer Excels"]
+    ExcelAppend -.-> ExcelNote>"If Failed: Mark as 'Did Not Pass' \nand write Reason in new column"]
     ExcelAppend --> Main_Loop
     
     %% Batch End
-    Main_Loop -- No --> GenFinalReport[Generate Final Markdown Report]
-    GenFinalReport --> End((End))
+    Main_Loop -- No --> GenFinalReport["Generate Final Markdown Report"]
+    GenFinalReport --> End(("End"))
 ```
 
 ## 🚀 Getting Started
