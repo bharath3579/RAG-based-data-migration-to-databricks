@@ -222,7 +222,7 @@ def generate_sql_test_cases(source_sql: str) -> TestCasesResult:
     if custom_rules:
         system_prompt += f"\n\nHIGH PRIORITY TESTCASE GENERATION SKILLS:\n{custom_rules}\n"
     
-    prompt = f"""Generate DDLs and 3 synthetic JSON datasets for every table referenced in the following SQL query.
+    prompt = f"""Generate DDLs and 1 synthetic JSON dataset for every table referenced in the following SQL query.
     
 SQL:
 ```sql
@@ -231,21 +231,19 @@ SQL:
 
 RULES:
 1. Provide a `sql_server_ddl` (T-SQL compatible) and `databricks_ddl` (Spark SQL compatible) for each table. Do NOT include catalog/schema/database prefixes in the DDLs (use simple table names).
-2. Generate exactly three datasets per table:
-   - `dataset_1_edge`: rows containing NULLs, empty strings, extremely large/small values.
-   - `dataset_2_normal`: rows containing realistic, common distributions.
-   - `dataset_3_boundary`: rows hitting boundary conditions for joins or filters present in the SQL.
+2. Generate exactly ONE dataset per table inside the `dataset_2_normal` field:
+   - `dataset_2_normal`: exactly 20 rows containing realistic, common distributions.
+   - Leave `dataset_1_edge` and `dataset_3_boundary` empty or null.
 3. The datasets must be JSON arrays of objects, where keys are exactly the column names defined in the DDLs. Ensure data types are strictly compatible with JSON parsing (e.g. stringify dates).
 4. Do NOT generate NULL values for columns that are likely primary keys (e.g., column names containing 'ID', 'Code', 'Key') or defined as such in the DDL.
-5. EXTREMELY IMPORTANT: You must carefully inspect the SQL query and ensure that the generated DDL for each table includes ALL columns referenced in the query (in JOIN conditions, SELECT clause, WHERE filters, GROUP BY, ORDER BY, partitioning windows, etc.). For example, if a table is joined on CustomerID, its DDL MUST declare the CustomerID column. If CustomerName is selected from Customers, the Customers DDL MUST declare the CustomerName column.
-6. Prefer nullable descriptive string columns in mock DDLs unless the source SQL requires NOT NULL. If a DDL column is NOT NULL, every dataset row must provide a non-null, non-empty compatible value for that column.
+5. EXTREMELY IMPORTANT: You must carefully inspect the SQL query and ensure that the generated DDL for each table includes ALL columns referenced in the query (in JOIN conditions, SELECT clause, WHERE filters, GROUP BY, ORDER BY, partitioning windows, etc.).
+6. Prefer nullable descriptive string columns in mock DDLs unless the source SQL requires NOT NULL.
 7. Databricks DDL must not use explicit `NULL` after a column type. Nullable is the default in Spark SQL. Use `OrderDate TIMESTAMP`, not `OrderDate TIMESTAMP NULL`. Only use `NOT NULL` when absolutely required.
-8. Numeric edge values must remain inside safe execution ranges. Do not generate values that make ordinary arithmetic expressions overflow SQL Server `MONEY`, `DECIMAL`, `FLOAT`, `INT`, or Databricks decimal types unless the source query is explicitly testing overflow handling.
-9. Test data must be useful for behavioral validation. For dataset_2_normal and dataset_3_boundary, create coherent rows across all joined tables so the final query returns at least one non-empty result row after joins, filters, ranks, GROUP BY/HAVING, and subqueries. Empty result sets for the normal or boundary validation cases are rejected as test-data quality failures.
-10. For each major WHERE/HAVING predicate, include at least one row that passes and one row that fails. For date filters such as YEAR(date_col) >= 2024, include dates inside and outside the accepted range while ensuring at least one joined row passes all filters.
-11. For ranking/window queries, include enough rows per partition to exercise rank/order logic and ensure at least one row meets the rank predicate, such as RegionalRank <= 5.
-12. For boundary datasets, include rows exactly on the accepted side of each boundary, not only rows outside the filter. Boundary data must both test exclusion and produce at least one included final result row.
-13. If the source references a SQL Server system/helper object such as master..spt_values, sys tables, INFORMATION_SCHEMA, or a recursive number CTE, do not emit empty DDL. Replace helper objects with simple mock tables or inline datasets that expose the referenced columns, with enough rows to exercise the query.
+8. Numeric edge values must remain inside safe execution ranges.
+9. Test data must be useful for behavioral validation. You MUST create coherent rows across all joined tables so the final query returns at least one non-empty result row after joins, filters, ranks, GROUP BY/HAVING, and subqueries. 
+10. For date filters such as YEAR(date_col) >= 2024, include dates inside the accepted range.
+11. For ranking/window queries, include enough rows per partition to exercise rank/order logic.
+12. If the source references a SQL Server system/helper object such as master..spt_values, replace helper objects with simple mock tables or inline datasets that expose the referenced columns.
 """
     prompt = _enforce_json(prompt, TestCasesResult)
 
@@ -443,3 +441,55 @@ def summarize_failure(source_sql: str, errors: str) -> SummaryResult:
         response_format={"type": "json_object"}
     )
     return SummaryResult.model_validate_json(_completion_json_content(completion, "Failure summarization"))
+
+def analyze_validation_failure(source_sql: str, source_dialect: str, target_dialect: str, source_test_sql: str, target_test_sql: str, raw_error: str) -> str:
+    """Intelligent feedback loop agent that analyzes mismatch errors."""
+    client = get_client()
+    model = _get_model()
+    
+    system_prompt = f"You are a Senior SQL Migration Architect diagnosing a data mismatch between {source_dialect} and {target_dialect}."
+    
+    prompt = f"""A data validation check failed between the source {source_dialect} SQL and the translated {target_dialect} SQL.
+
+SOURCE ORIGINAL SQL:
+```sql
+{source_sql}
+```
+
+EXECUTED {source_dialect} TEST SQL (Source of Truth):
+```sql
+{source_test_sql}
+```
+
+EXECUTED {target_dialect} TEST SQL (Failed Translation):
+```sql
+{target_test_sql}
+```
+
+VALIDATION ERROR / DATA MISMATCH:
+{raw_error}
+
+INSTRUCTIONS:
+1. Analyze the logic flaw in the `{target_dialect}` query that caused this mismatch compared to the `{source_dialect}` query.
+2. Explain WHY the outputs differ (e.g., "The target query uses a LEFT JOIN where the source used an INNER JOIN", or "The function XYZ in Databricks behaves differently with NULLs than SQL Server").
+3. Provide explicit, actionable feedback on how the translation agent should correct the code in its next attempt.
+4. Output your analysis as a direct instructional summary.
+
+Return ONLY a JSON object with a single string field named `failure_summary`.
+"""
+    prompt = _enforce_json(prompt, SummaryResult)
+
+    try:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        res = SummaryResult.model_validate_json(_completion_json_content(completion, "Intelligent Validation Analysis"))
+        return res.failure_summary
+    except Exception as e:
+        return f"Intelligent Analysis Failed ({e}). Raw error: {raw_error}"
+

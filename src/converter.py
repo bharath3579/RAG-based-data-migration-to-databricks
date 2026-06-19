@@ -10,7 +10,7 @@ def print(*args, **kwargs):
     builtins.print(*args, **kwargs)
 
 from .mapper import SchemaMapper
-from .agent import translate_sql, translate_pyspark, generate_sql_test_cases, summarize_failure, summarize_sql, summarize_pyspark
+from .agent import translate_sql, translate_pyspark, generate_sql_test_cases, summarize_failure, summarize_sql, summarize_pyspark, analyze_validation_failure
 from .dual_validator import validate_dual_engine
 from .models import TestCasesResult
 from parsers.sql_parser import parse_sql
@@ -219,6 +219,21 @@ def process_file(
                 test_cases = drop_empty_ddl_cte_tables(test_cases, source_code)
             except Exception as ex:
                 print(f"    - Warning: test case regeneration failed: {ex}")
+        else:
+            print("    - [Intelligent Analysis] Analyzing failure reason using AI Summarizer...")
+            try:
+                intelligent_feedback = analyze_validation_failure(
+                    source_sql=source_code,
+                    source_dialect=source_dialect,
+                    target_dialect=target_dialect,
+                    source_test_sql=translation.test_sql_server_sql if translation else "",
+                    target_test_sql=translation.test_databricks_sql if translation else "",
+                    raw_error=latest_error
+                )
+                print(f"      * [Feedback Generated] {intelligent_feedback[:100].strip()}...")
+                latest_error = f"INTELLIGENT VALIDATION ANALYSIS:\n{intelligent_feedback}\n\nRAW ERROR DETAILS:\n{latest_error}"
+            except Exception as e:
+                print(f"      * [Warning] Feedback generation failed: {e}")
             
         attempt += 1
 

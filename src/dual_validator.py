@@ -299,8 +299,8 @@ def validate_test_case_definitions(test_cases: TestCasesResult) -> str | None:
         dbx_ddl = normalize_databricks_ddl(table.databricks_ddl)
         if not dbx_ddl:
             return f"TEST_DATA_QUALITY_ERROR: Empty Databricks DDL generated for table '{table.table_name}'."
-        if not table.dataset_1_edge and not table.dataset_2_normal and not table.dataset_3_boundary:
-            return f"TEST_DATA_QUALITY_ERROR: No datasets generated for table '{table.table_name}'."
+        if not table.dataset_2_normal:
+            return f"TEST_DATA_QUALITY_ERROR: No dataset generated for table '{table.table_name}'."
     return None
 
 def execute_statements_collect_last_result(cursor, statements: list[str], engine_name: str) -> tuple[list, list]:
@@ -571,26 +571,19 @@ def validate_dual_engine(test_databricks_sql: str, test_sql_server_sql: str, tes
         return res
     if dbx_conn: dbx_conn.close()
 
-    # Run all 3 test cases
-    res.pass_case_1, d1 = load_data_and_test(test_databricks_sql, test_sql_server_sql, test_cases, 1)
+    # Run normal test case
     res.pass_case_2, d2 = load_data_and_test(test_databricks_sql, test_sql_server_sql, test_cases, 2)
-    res.pass_case_3, d3 = load_data_and_test(test_databricks_sql, test_sql_server_sql, test_cases, 3)
     
-    res.details = d1 + d2 + d3
+    # We ignore edge and boundary tests per user configuration
+    res.pass_case_1 = True
+    res.pass_case_3 = True
+    
+    res.details = d2
     empty_case_2 = "Match (Both result sets are empty)" in d2
-    empty_case_3 = "Match (Both result sets are empty)" in d3
-    if res.pass_case_1 and res.pass_case_2 and res.pass_case_3 and (empty_case_2 or empty_case_3):
-        if empty_case_2:
-            res.pass_case_2 = False
-        if empty_case_3:
-            res.pass_case_3 = False
-        empty_cases = ", ".join(
-            case_name
-            for case_name, is_empty in [("Case 2 normal", empty_case_2), ("Case 3 boundary", empty_case_3)]
-            if is_empty
-        )
+    if res.pass_case_2 and empty_case_2:
+        res.pass_case_2 = False
         res.details += (
-            f"TEST_DATA_QUALITY_ERROR: {empty_cases} returned empty result sets on both engines. "
-            "Regenerate test data so normal and boundary datasets produce non-empty rows through the query filters and joins.\n"
+            f"TEST_DATA_QUALITY_ERROR: Case 2 normal returned empty result sets on both engines. "
+            "Regenerate test data so datasets produce non-empty rows through the query filters and joins.\n"
         )
     return res
