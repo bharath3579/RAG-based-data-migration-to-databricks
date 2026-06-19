@@ -1,0 +1,12 @@
+MS_sql_server_schema,MS_sql_server_table,databricks_catalog,databricks_schema,databricks_table
+dbo,Customers,testing_sql_ai,sandbox,customers
+dbo,Orders,testing_sql_ai,sandbox,orders
+dbo,OrderDetails,testing_sql_ai,sandbox,orderdetails
+dbo,Products,testing_sql_ai,sandbox,products
+dbo,Categories,testing_sql_ai,sandbox,categories
+dbo,Suppliers,testing_sql_ai,sandbox,suppliers
+dbo,Employees,testing_sql_ai,sandbox,employees
+dbo,Departments,testing_sql_ai,sandbox,departments
+dbo,Regions,testing_sql_ai,sandbox,regions
+dbo,EmployeeBonus,testing_sql_ai,sandbox,employeebonus
+dbo,spt_values,testing_sql_ai,sandbox,spt_values

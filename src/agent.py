@@ -144,13 +144,13 @@ def translate_sql(source_sql: str, source_dialect: str, target_dialect: str, map
 
     system_prompt = f"""You are an Expert SQL Migration Architect converting {source_dialect} to {target_dialect}.
 You must generate THREE versions of the converted query:
-1. 'final_mapped_sql': The production-ready {target_dialect} query. Use the following explicit catalog/schema mapping rules for table names. If a table isn't in the mapping, retain its original name.
+1. 'final_mapped_sql': The production-ready {target_dialect} query. CRITICAL: For this final file, you MUST use the exact names from the mapping rules below to write to the file. DO NOT use the default test catalog/schema/database in this file. If a table isn't in the mapping, retain its original name.
 MAPPING RULES:
 {mapping_rules}
 
-2. 'test_databricks_sql': A version of the query for syntax validation and testing in {target_dialect}. FORCE all table references to use the exact prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`.
+2. 'test_databricks_sql': A version of the query for syntax validation and testing in {target_dialect}. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`.
 
-3. 'test_sql_server_sql': A version of the query for execution in the {source_dialect} test environment. FORCE all table references to use the exact prefix: `{sql_db}.dbo.<table_name>` (or omit if default).
+3. 'test_sql_server_sql': A version of the query for execution in the {source_dialect} test environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{sql_db}.dbo.<table_name>` (or omit if default).
 
 Strictly follow Spark SQL syntax for Databricks.
 All three outputs must be executable. If the source SQL contains a construct that the source engine rejects during validation, such as nested window functions, rewrite it into an equivalent executable form for test_sql_server_sql and apply the same semantic rewrite to test_databricks_sql and final_mapped_sql.
@@ -375,14 +375,18 @@ def translate_pyspark(source_code: str, source_dialect: str, target_dialect: str
     client = get_client()
     model = _get_model()
     
+    dbx_catalog = os.getenv("CATALOG_NAME", "testing_sql_ai")
+    dbx_schema = os.getenv("SCHEMA_NAME", "sandbox")
+    sql_db = os.getenv("SQL_SERVER_DB", "testdb")
+    
     custom_rules = _load_skills()
 
     system_prompt = f"""You are an Expert PySpark Migration Architect converting {source_dialect} to {target_dialect}.
 You must generate native PySpark DataFrame API code (not raw SQL wrapped in spark.sql() unless absolutely necessary for an edge case).
 You must generate THREE versions of the converted code:
-1. 'final_mapped_code': The production-ready {target_dialect} PySpark code. Use the provided mapping rules for table paths/names if applicable.
-2. 'test_databricks_code': A version of the PySpark code adapted for testing in Databricks.
-3. 'test_source_code': A version of the PySpark code for execution in the {source_dialect} environment.
+1. 'final_mapped_code': The production-ready {target_dialect} PySpark code. CRITICAL: For this final file, you MUST use the exact names from the mapping rules provided below. DO NOT use the default test catalog/schema/database here.
+2. 'test_databricks_code': A version of the PySpark code adapted for testing in Databricks. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`.
+3. 'test_source_code': A version of the PySpark code for execution in the {source_dialect} environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{sql_db}.dbo.<table_name>`.
 
 Strictly follow native PySpark syntax.
 """
