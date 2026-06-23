@@ -26,7 +26,7 @@ class CodeSummaryResult(BaseModel):
     source_platform: str = Field(description="Detected or user-provided source platform.")
     target_platform: str = Field(description="Target platform for the migration.")
     language: str = Field(description="Source language, for MVP this is sql.")
-    tables_and_schema: Dict[str, Any] = Field(description="Tables, aliases, and referenced columns or schemas inferred from the SQL.")
+    tables_and_schema: Dict[str, List[str]] = Field(description="A dictionary mapping each table name (string) to a list of its referenced column names (list of strings). Strip all table aliases from the column names (e.g., use 'employee_id' instead of 'e.employee_id').")
     functions: List[str] = Field(description="SQL functions and operators used by the source code.")
     technical_summary: str = Field(description="Structured, step-wise technical explanation of the source code behavior.")
 

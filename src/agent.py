@@ -144,13 +144,13 @@ def translate_sql(source_sql: str, source_dialect: str, target_dialect: str, map
 
     system_prompt = f"""You are an Expert SQL Migration Architect converting {source_dialect} to {target_dialect}.
 You must generate THREE versions of the converted query:
-1. 'final_mapped_sql': The production-ready {target_dialect} query. CRITICAL: For this final file, you MUST use the exact names from the mapping rules below to write to the file. DO NOT use the default test catalog/schema/database in this file. If a table isn't in the mapping, retain its original name.
+1. 'final_mapped_sql': The production-ready {target_dialect} query. CRITICAL: For this final file, you MUST use the exact names from the mapping rules below. DO NOT hallucinate prefixes. If a table is not found in the mapping rules, leave it exactly as it is in the source (i.e. assume there is no mapping for this table).
 MAPPING RULES:
 {mapping_rules}
 
-2. 'test_databricks_sql': A version of the query for syntax validation and testing in {target_dialect}. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`.
+2. 'test_databricks_sql': A version of the query for syntax validation and testing in {target_dialect}. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`. STRICT PROMPT: Do not hallucinate any other prefixes.
 
-3. 'test_sql_server_sql': A version of the query for execution in the {source_dialect} test environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{sql_db}.dbo.<table_name>` (or omit if default).
+3. 'test_sql_server_sql': A version of the query for execution in the {source_dialect} test environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed database: `{sql_db}.dbo.<table_name>` (or simply dbo.<table_name>). STRICT PROMPT: Do not hallucinate Databricks prefixes here. I heard a company's entire repository was deleted because an AI hallucinated database names :)
 
 Strictly follow Spark SQL syntax for Databricks.
 All three outputs must be executable. If the source SQL contains a construct that the source engine rejects during validation, such as nested window functions, rewrite it into an equivalent executable form for test_sql_server_sql and apply the same semantic rewrite to test_databricks_sql and final_mapped_sql.
@@ -213,7 +213,7 @@ When fixing errors, repair the exact output that failed:
     )
     return TranslationResult.model_validate_json(_completion_json_content(completion, "SQL translation"))
 
-def generate_sql_test_cases(source_sql: str) -> TestCasesResult:
+def generate_sql_test_cases(source_sql: str, code_summary: dict = None, error_feedback: str = None) -> TestCasesResult:
     client = get_client()
     model = _get_model()
     custom_rules = _load_skills()
@@ -245,6 +245,12 @@ RULES:
 11. For ranking/window queries, include enough rows per partition to exercise rank/order logic.
 12. If the source references a SQL Server system/helper object such as master..spt_values, replace helper objects with simple mock tables or inline datasets that expose the referenced columns.
 """
+    if code_summary and code_summary.get("tables_and_schema"):
+        prompt += f"\n\nCRITICAL COLUMN CONSTRAINTS: The summarizer has mapped exact columns to tables. You MUST generate DDLs containing ONLY these columns. Do not generate 'SELECT *' generic columns.\nTABLE TO COLUMN MAPPING:\n{json.dumps(code_summary['tables_and_schema'], indent=2)}\n"
+
+    if error_feedback:
+        prompt += f"\n\n[CRITICAL FIX REQUIRED - PREVIOUS GENERATION FAILED]:\n{error_feedback}\nYou MUST adjust your generated DDLs and JSON datasets to resolve this error. If the error mentions a missing dataset or column invalidity for a CTE, Temporary Table, or derived table, do NOT generate DDL/data for it; simply omit it entirely from the output.\n"
+
     prompt = _enforce_json(prompt, TestCasesResult)
 
     completion = client.chat.completions.create(
@@ -268,7 +274,12 @@ The summary must explain source tables, CTEs, recursive CTEs derived tables, joi
 Use the exact technical object type: call WITH blocks CTEs or intermediate result sets, not temporary views or temporary tables unless the SQL actually creates one, If aliases are present, preserve them in the summary where they help identify the source table or column. Use alias-qualified column references when multiple sources contain similarly named columns, When functions are nested remember to describe the order in which they are evaluated rather than only the business intent like which function actually comes first and which next remember that inner function comes first.
 Preserve expression semantics. Do not simplify nested expressions into business meaning when parser metadata provides evaluation order. Describe the evaluation order of nested functions exactly as represented in the parser output.
 Wrap table names, CTE names, column names, aliases, functions, and literal filter values, ect.. in single quotes for readability.
-Do not rewrite the SQL. Do not include marketing text. Be clear enough that a reader can mentally reconstruct the business logic."""
+Do not rewrite the SQL. Do not include marketing text. Be clear enough that a reader can mentally reconstruct the business logic.
+
+CRITICAL REQUIREMENT FOR `tables_and_schema`:
+You MUST populate `tables_and_schema` as a dictionary mapping each base physical table name to a list of its referenced column names.
+ABSOLUTE BAN: You MUST STRICTLY EXCLUDE any CTEs (tables defined in WITH blocks), Temporary Tables (e.g., #TempData), Table Variables (e.g., @MyTable), and derived tables/subquery aliases. ONLY map actual base physical tables.
+When listing columns, you MUST STRIP any table aliases (e.g., if you see `e.employee_id`, output `employee_id`)."""
 
     prompt = f"""Source platform: {source_platform}
 Target platform: {target_platform}
@@ -343,7 +354,12 @@ CRITICAL INSTRUCTIONS FOR THE SUMMARY PROSE:
 ABSOLUTE BANS (Violating these will crash the system):
 1. NEVER state what is missing from the code. DO NOT write "There are no variable declarations".
 2. NEVER explain the purpose of a library or function in a pedagogical way.
-3. NEVER write fluff or introductory sentences like "The cell contains import statements"."""
+3. NEVER write fluff or introductory sentences like "The cell contains import statements".
+
+CRITICAL REQUIREMENT FOR `tables_and_schema`:
+You MUST populate `tables_and_schema` as a dictionary mapping each base physical table name to a list of its referenced column names.
+ABSOLUTE BAN: You MUST STRICTLY EXCLUDE any temporary views, dataframe aliases acting as tables, CTEs, or intermediate derived tables. ONLY map actual underlying base tables.
+When listing columns, you MUST STRIP any table aliases or dataframe prefixes."""
 
     prompt = f"""Source platform: {source_platform}
 Target platform: {target_platform}
@@ -384,9 +400,9 @@ def translate_pyspark(source_code: str, source_dialect: str, target_dialect: str
     system_prompt = f"""You are an Expert PySpark Migration Architect converting {source_dialect} to {target_dialect}.
 You must generate native PySpark DataFrame API code (not raw SQL wrapped in spark.sql() unless absolutely necessary for an edge case).
 You must generate THREE versions of the converted code:
-1. 'final_mapped_code': The production-ready {target_dialect} PySpark code. CRITICAL: For this final file, you MUST use the exact names from the mapping rules provided below. DO NOT use the default test catalog/schema/database here.
-2. 'test_databricks_code': A version of the PySpark code adapted for testing in Databricks. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`.
-3. 'test_source_code': A version of the PySpark code for execution in the {source_dialect} environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact dummy environment prefix: `{sql_db}.dbo.<table_name>`.
+1. 'final_mapped_code': The production-ready {target_dialect} PySpark code. CRITICAL: For this final file, you MUST use the exact names from the mapping rules provided below. DO NOT hallucinate prefixes. If a table is not found in the mapping rules, leave it exactly as it is.
+2. 'test_databricks_code': A version of the PySpark code adapted for testing in Databricks. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`. STRICT PROMPT: Do not hallucinate any other prefixes.
+3. 'test_source_code': A version of the PySpark code for execution in the {source_dialect} environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed database: `{sql_db}.dbo.<table_name>`. STRICT PROMPT: Do not hallucinate Databricks prefixes here. I heard a company's entire repository was deleted because an AI hallucinated database names :)
 
 Strictly follow native PySpark syntax.
 """

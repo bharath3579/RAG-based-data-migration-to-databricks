@@ -109,9 +109,12 @@ def process_file(
     if not skip_validation:
         print("[STEP 4/7] Invoking Databricks LLM agent to generate 3 edge/normal/boundary test datasets...")
         try:
-            test_cases = generate_sql_test_cases(source_code)
+            test_cases = generate_sql_test_cases(source_code, code_summary=code_summary)
             test_cases = drop_empty_ddl_cte_tables(test_cases, source_code)
             print(f"    - [PASS] Generated mock tables: {', '.join(t.table_name for t in test_cases.tables)}")
+            for t in test_cases.tables:
+                print(f"\n    [DEBUG Databricks DDL] Table {t.table_name}: {t.databricks_ddl}")
+                print(f"    [DEBUG SQL Server DDL] Table {t.table_name}: {t.sql_server_ddl}\n")
         except Exception as e:
             return ConversionResult(
                 source_file=source_file, 
@@ -215,7 +218,7 @@ def process_file(
         if is_setup_error:
             print("    - [Self-Correction] Setup / test-data quality issue detected. Regenerating mock test cases...")
             try:
-                test_cases = generate_sql_test_cases(source_code)
+                test_cases = generate_sql_test_cases(source_code, code_summary=code_summary, error_feedback=latest_error)
                 test_cases = drop_empty_ddl_cte_tables(test_cases, source_code)
             except Exception as ex:
                 print(f"    - Warning: test case regeneration failed: {ex}")
