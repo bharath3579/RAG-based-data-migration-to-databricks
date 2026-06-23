@@ -174,8 +174,8 @@ def compare_dataframes(df_sql: pd.DataFrame, df_dbx: pd.DataFrame) -> tuple[bool
         )
         
     if ignored_cols:
-        return True, f"Match after ignoring nondeterministic columns: {ignored_cols}"
-    return True, "Match"
+        return True, f"Match after ignoring nondeterministic columns: {ignored_cols}. Row count: {len(df_sql)}. Data Sample: {df_sql.head(5).to_dict(orient='records')}"
+    return True, f"Match. Row count: {len(df_sql)}. Data Sample: {df_sql.head(5).to_dict(orient='records')}"
 
 def get_not_null_columns(sql_cursor, table_name: str, sql_ddl: str) -> list[str]:
     """Return NOT NULL columns using SQL Server metadata, with a regex fallback for setup failures."""
@@ -438,6 +438,8 @@ def load_data_and_test(test_databricks_sql: str, test_sql_server_sql: str, test_
             # DBX drop
             dbx_cursor.execute(f"DROP TABLE IF EXISTS {table.table_name}")
             dbx_cursor.execute(dbx_ddl)
+            
+            print(f"      * [Success] DDL successfully formed and executed for table: {table.table_name}")
             
             # Get correct dataset
             dataset = []

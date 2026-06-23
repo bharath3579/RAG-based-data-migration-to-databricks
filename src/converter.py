@@ -177,6 +177,7 @@ def process_file(
                     user_feedback=user_feedback,
                     code_summary=code_summary
                 )
+                translation.test_sql_server_sql = source_code
         except Exception as e:
             return ConversionResult(
                 source_file=source_file, 

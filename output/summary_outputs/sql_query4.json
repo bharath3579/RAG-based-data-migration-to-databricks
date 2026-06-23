@@ -1,0 +1,22 @@
+{
+  "file_path": "input\\sql_server_input_files\\second\\sql_query4.sql",
+  "source_platform": "SQL Server",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "customer": [
+      "customer_id",
+      "customer_name",
+      "status"
+    ],
+    "sales": [
+      "customer_id",
+      "sales_amount"
+    ]
+  },
+  "functions": [
+    "SUM"
+  ],
+  "technical_summary": "The SQL query starts by defining a CTE named 'CustomerSales'. This CTE joins the 'customer' table (aliased as 'c') with the 'sales' table (aliased as 's') using an INNER JOIN on the condition 'c.customer_id = s.customer_id'. It then filters the joined data to only include rows where 'c.status' is 'ACTIVE'. The query groups the filtered data by 'c.customer_id' and 'c.customer_name', and calculates the sum of 's.sales_amount' for each group, aliasing this sum as 'total_sales'. The outer query selects 'customer_id', 'customer_name', and 'total_sales' from the 'CustomerSales' CTE, further filtering the results to only include rows where 'total_sales' is greater than 1000. The final output is ordered in descending order by 'total_sales' and limited to the top 10 rows.",
+  "summary_error": null
+}

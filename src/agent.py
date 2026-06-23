@@ -148,9 +148,9 @@ You must generate THREE versions of the converted query:
 MAPPING RULES:
 {mapping_rules}
 
-2. 'test_databricks_sql': A version of the query for syntax validation and testing in {target_dialect}. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`. STRICT PROMPT: Do not hallucinate any other prefixes.
+2. 'test_databricks_sql': A version of the query for syntax validation and testing in {target_dialect}. CRITICAL: For testing only, you MUST IGNORE the mapping rules completely and use the EXACT ORIGINAL base table names from the source SQL (e.g. if the source uses `customer`, you must use `customer`). DO NOT add any database/catalog/schema prefixes at all! STRICT PROMPT: Do not hallucinate any prefixes or apply mapped table names here.
 
-3. 'test_sql_server_sql': A version of the query for execution in the {source_dialect} test environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed database: `{sql_db}.dbo.<table_name>` (or simply dbo.<table_name>). STRICT PROMPT: Do not hallucinate Databricks prefixes here. I heard a company's entire repository was deleted because an AI hallucinated database names :)
+3. 'test_sql_server_sql': A version of the query for execution in the {source_dialect} test environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules completely and use the EXACT ORIGINAL base table names from the source SQL. DO NOT add any prefixes at all! STRICT PROMPT: Do not hallucinate any prefixes or mapped names.
 
 Strictly follow Spark SQL syntax for Databricks.
 All three outputs must be executable. If the source SQL contains a construct that the source engine rejects during validation, such as nested window functions, rewrite it into an equivalent executable form for test_sql_server_sql and apply the same semantic rewrite to test_databricks_sql and final_mapped_sql.
@@ -230,7 +230,7 @@ SQL:
 ```
 
 RULES:
-1. Provide a `sql_server_ddl` (T-SQL compatible) and `databricks_ddl` (Spark SQL compatible) for each table. Do NOT include catalog/schema/database prefixes in the DDLs (use simple table names).
+1. Provide a `sql_server_ddl` (T-SQL compatible) and `databricks_ddl` (Spark SQL compatible) for each table. Do NOT include catalog/schema/database prefixes in the DDLs (use simple table names). For `databricks_ddl`, you MUST use `CREATE OR REPLACE TABLE`. For `sql_server_ddl`, use `CREATE TABLE`.
 2. Generate exactly ONE dataset per table inside the `dataset_2_normal` field:
    - `dataset_2_normal`: exactly 20 rows containing realistic, common distributions.
    - Leave `dataset_1_edge` and `dataset_3_boundary` empty or null.
@@ -401,8 +401,8 @@ def translate_pyspark(source_code: str, source_dialect: str, target_dialect: str
 You must generate native PySpark DataFrame API code (not raw SQL wrapped in spark.sql() unless absolutely necessary for an edge case).
 You must generate THREE versions of the converted code:
 1. 'final_mapped_code': The production-ready {target_dialect} PySpark code. CRITICAL: For this final file, you MUST use the exact names from the mapping rules provided below. DO NOT hallucinate prefixes. If a table is not found in the mapping rules, leave it exactly as it is.
-2. 'test_databricks_code': A version of the PySpark code adapted for testing in Databricks. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed dummy environment prefix: `{dbx_catalog}.{dbx_schema}.<table_name>`. STRICT PROMPT: Do not hallucinate any other prefixes.
-3. 'test_source_code': A version of the PySpark code for execution in the {source_dialect} environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules and FORCE all table references to use the exact fixed database: `{sql_db}.dbo.<table_name>`. STRICT PROMPT: Do not hallucinate Databricks prefixes here. I heard a company's entire repository was deleted because an AI hallucinated database names :)
+2. 'test_databricks_code': A version of the PySpark code adapted for testing in Databricks. CRITICAL: For testing only, you MUST IGNORE the mapping rules completely and use the EXACT ORIGINAL base table names from the source code. DO NOT add any prefixes at all! STRICT PROMPT: Do not hallucinate any prefixes or mapped names.
+3. 'test_source_code': A version of the PySpark code for execution in the {source_dialect} environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules completely and use the EXACT ORIGINAL base table names from the source code. DO NOT add any prefixes at all! STRICT PROMPT: Do not hallucinate any prefixes or mapped names.
 
 Strictly follow native PySpark syntax.
 """
