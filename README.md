@@ -8,6 +8,7 @@ Agentic SQL Converter is an AI-powered code translation and validation pipeline.
 - **AST Parsing & Intelligent Summarization**: Extracts Abstract Syntax Trees (AST) and generates comprehensive AI summaries of tables, schemas, and functions before attempting conversion.
 - **Automated Mock Testing**: Automatically generates boundary, edge, and normal test datasets (CSVs) using AI to validate conversion accuracy.
 - **Dual-Engine Validation**: Executes the generated test cases against both the source engine (e.g., SQL Server) and target engine (Databricks SQL Warehouse) to compare outputs and ensure 100% equivalence.
+- **Single-Engine Fallback Validation**: If source database credentials are missing, or the platform is unsupported (e.g., Oracle, Postgres), the pipeline gracefully bypasses the source connection and executes Databricks-only syntax and runtime validation.
 - **Self-Healing LLM Feedback Loop**: If validation fails due to syntax or data quality mismatch, the system automatically captures the error, sends it to the summarizer, generates internal feedback, and retries the translation automatically without user intervention.
 - **Flexible Execution Modes**: Run partial pipelines (e.g., AST parser only, summary only, or full translation and validation). Available in both Batch mode and Interactive CLI mode.
 
@@ -68,8 +69,12 @@ flowchart TD
         %% Step 4: Validation Check
         Step4_Trans --> CheckConvert{"Execute till Convert\n(Skip Validation)?"}
         
-        CheckConvert -- No --> Step5_Val["Dual-Engine Validation\nRun Mock Data against both engines"]
-        Step5_Val --> ValCheck{"Validation Passed?"}
+        CheckConvert -- No --> CheckCreds{"Source Platform = Others\nor Missing Creds?"}
+        CheckCreds -- Yes --> SingleVal["Single-Engine Validation\n(Databricks Syntax Only)"]
+        CheckCreds -- No --> DualVal["Dual-Engine Validation\n(Source & Databricks)"]
+        
+        SingleVal --> ValCheck{"Validation Passed?"}
+        DualVal --> ValCheck
         
         %% === AUTOMATIC FEEDBACK LOOP (NO USER) ===
         ValCheck -- No --> ErrorCapture["Capture Error/Mismatch Data"]
@@ -160,7 +165,7 @@ python main.py --input-dir input/ --run full --output-lang sql
   - `convert`: Translate code but skip Dual-Engine Validation.
   - `full`: End-to-end Translation + LLM Mock Generation + Dual-Engine Validation.
 - `--output-lang`: Target output format (`sql`, `pyspark`, `py`, `scala`).
-- `--source-platform`: E.g., `SQL Server`, `Azure Synapse`.
+- `--source-platform`: E.g., `SQL Server`, `Azure Synapse`, or `Others` (triggers Single-Engine Validation).
 
 ### 2. Interactive CLI Mode
 If you prefer to paste queries one by one and manually approve or guide the AI's translation, use interactive mode:
