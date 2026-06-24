@@ -144,11 +144,14 @@ def main():
         print("\nSelect source platform for SQL files:")
         print("1. SQL Server (sql files)")
         print("2. Azure Synapse (sql, scala, python)")
-        choice = input("Enter choice (1-2, or type name) [1]: ").strip()
+        print("3. Others (Single-Engine Validation)")
+        choice = input("Enter choice (1-3, or type name) [1]: ").strip()
         if not choice or choice == "1" or choice.lower() == "sql server":
             source_dialect = "SQL Server"
         elif choice == "2" or choice.lower() == "azure synapse":
             source_dialect = "Azure Synapse"
+        elif choice == "3" or choice.lower() == "others":
+            source_dialect = "Others"
         else:
             source_dialect = choice # Allow custom typing
     os.environ["SOURCE_DIALECT"] = source_dialect

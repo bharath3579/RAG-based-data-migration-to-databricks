@@ -195,8 +195,8 @@ def process_file(
             success = True
             break
             
-        print("[STEP 7/7] Running Dual-Engine Validation against SQL Server & Databricks SQL Warehouse...")
-        val_res = validate_dual_engine(translation.test_databricks_sql, translation.test_sql_server_sql, test_cases)
+        print("[STEP 7/7] Running Dual-Engine Validation against Source & Databricks SQL Warehouse...")
+        val_res = validate_dual_engine(translation.test_databricks_sql, translation.test_sql_server_sql, test_cases, source_dialect)
         
         success = val_res.error is None and val_res.pass_case_1 and val_res.pass_case_2 and val_res.pass_case_3
         if success:

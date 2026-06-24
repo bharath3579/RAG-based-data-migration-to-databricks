@@ -1,29 +1,31 @@
 {
   "files": [
     {
-      "file_path": "input\\sql_server_input_files\\second\\sql_query4.sql",
-      "source_platform": "SQL Server",
+      "file_path": "input\\sql_server_input_files\\third\\oracle_sql2.sql",
+      "source_platform": "Others",
       "target_platform": "databricks",
       "language": "sql",
       "tables_and_schema": {
-        "customer": [
+        "target_customers": [
           "customer_id",
           "customer_name",
-          "status"
+          "city"
         ],
-        "sales": [
+        "source_customers": [
           "customer_id",
-          "sales_amount"
+          "customer_name",
+          "city"
         ]
       },
       "functions": [
-        "SUM"
+        "INSERT",
+        "VALUES"
       ],
-      "technical_summary": "The SQL query starts by defining a CTE named 'CustomerSales'. This CTE joins the 'customer' table (aliased as 'c') with the 'sales' table (aliased as 's') using an INNER JOIN on the condition 'c.customer_id = s.customer_id'. It then filters the joined data to only include rows where 'c.status' is 'ACTIVE'. The query groups the filtered data by 'c.customer_id' and 'c.customer_name', and calculates the sum of 's.sales_amount' for each group, aliasing this sum as 'total_sales'. The outer query selects 'customer_id', 'customer_name', and 'total_sales' from the 'CustomerSales' CTE, further filtering the results to only include rows where 'total_sales' is greater than 1000. The final output is ordered in descending order by 'total_sales' and limited to the top 10 rows.",
+      "technical_summary": "The SQL statement performs a 'MERGE INTO' operation on the 'target_customers' table using the 'source_customers' table as the source. The merge condition is based on matching 'customer_id' in both tables. When a match is found, it updates 'customer_name' and 'city' in 'target_customers' with the corresponding values from 'source_customers'. When no match is found, it inserts new records into 'target_customers' with 'customer_id', 'customer_name', and 'city' from 'source_customers'. The 'INSERT' function specifies the columns to be inserted, and 'VALUES' provides the corresponding values from 'source_customers'.",
       "conversion_status": "SUCCESS",
       "validation_status": "PASS",
       "error_message": null,
-      "details": "Case 2: Match. Row count: 6. Data Sample: [{'customer_id': 10, 'customer_name': 'Lisa Harris', 'total_sales': Decimal('2800.00')}, {'customer_id': 5, 'customer_name': 'Mike Davis', 'total_sales': Decimal('2500.00')}, {'customer_id': 8, 'customer_name': 'Sarah Lee', 'total_sales': Decimal('2200.00')}, {'customer_id': 4, 'customer_name': 'Alice Brown', 'total_sales': Decimal('2000.00')}, {'customer_id': 1, 'customer_name': 'John Doe', 'total_sales': Decimal('2000.00')}]\n"
+      "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'num_affected_rows': 20, 'num_updated_rows': 19, 'num_deleted_rows': 0, 'num_inserted_rows': 1}]\n"
     }
   ]
 }

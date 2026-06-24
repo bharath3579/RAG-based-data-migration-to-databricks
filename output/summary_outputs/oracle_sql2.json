@@ -1,0 +1,24 @@
+{
+  "file_path": "input\\sql_server_input_files\\third\\oracle_sql2.sql",
+  "source_platform": "Others",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "target_customers": [
+      "customer_id",
+      "customer_name",
+      "city"
+    ],
+    "source_customers": [
+      "customer_id",
+      "customer_name",
+      "city"
+    ]
+  },
+  "functions": [
+    "INSERT",
+    "VALUES"
+  ],
+  "technical_summary": "The SQL statement performs a 'MERGE INTO' operation on the 'target_customers' table using the 'source_customers' table as the source. The merge condition is based on matching 'customer_id' in both tables. When a match is found, it updates 'customer_name' and 'city' in 'target_customers' with the corresponding values from 'source_customers'. When no match is found, it inserts new records into 'target_customers' with 'customer_id', 'customer_name', and 'city' from 'source_customers'. The 'INSERT' function specifies the columns to be inserted, and 'VALUES' provides the corresponding values from 'source_customers'.",
+  "summary_error": null
+}

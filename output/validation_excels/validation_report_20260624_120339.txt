@@ -1,0 +1,13 @@
+=== DUAL ENGINE VALIDATION REPORT ===
+Date: 2026-06-24 12:03:39
+Normalization Assumptions:
+- All columns explicitly CAST to STRING.
+- Whitespace TRIMMED.
+- NULL values and empty strings converted to '__NULL__'.
+
+======================================
+
+TABLE: oracle_sql2 -> oracle_sql2
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
