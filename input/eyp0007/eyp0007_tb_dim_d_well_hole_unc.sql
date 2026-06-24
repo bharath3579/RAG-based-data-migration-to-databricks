@@ -1,0 +1,57 @@
+CREATE TABLE [sch_anl].[eyp0007_tb_dim_d_well_hole_unc]
+( 
+  [id_vers]	[nvarchar] (4000) NOT NULL,
+  [id_well_hole] [nvarchar] (4000) NOT NULL,
+  [des_well_hole] [nvarchar] (4000),
+  [cod_uwi] [nvarchar] (4000),
+  [des_well_name] [nvarchar] (4000),
+  [cod_api10] [nvarchar] (4000),
+  [fec_start_date] [datetime2] NOT NULL,  
+  [fec_end_date] [datetime2],
+  [ind_bh_latitude] [float] ,
+  [ind_bh_longitude] [float] ,
+  [des_country] [nvarchar] (4000),
+  [ind_latitude] [float] ,
+  [ind_longitude] [float] ,
+  [id_fcty_1] [nvarchar] (4000),
+  [des_status] [nvarchar] (4000),
+  [id_basin] [varchar] (60),
+  [des_common_name] [nvarchar] (4000),
+  [des_county] [varchar] (40),
+  [des_country_name] [varchar] (25),
+  [des_ground_elevation] [float],
+  [des_ground_elevation_unit] [varchar] (12),
+  [des_normalized_geographic_coordinate_system] [varchar] (80),
+  [des_onshore_or_offshore] [varchar] (40),
+  [des_slot_name] [nvarchar] (4000),
+  [fec_spud_date] [datetime2],
+  [des_state_or_province] [varchar] (40),
+  [val_normalized_latitud] [float] ,
+  [val_normalized_longitude] [float] ,
+  [des_current_operator] [nvarchar] (4000),
+  [nom_pref_proj_coord_sys] [nvarchar] (4000),
+  [val_preferred_easting] [float] ,
+  [val_preferred_northing] [float],
+  [nom_pref_geogr_coord_sys] [nvarchar] (4000),
+  [val_preferred_latitude] [float] ,
+  [val_preferred_longitude] [float] ,
+  [des_existence_kind] [nvarchar] (4000),
+  [des_installation_name] [nvarchar] (4000),
+  [val_water_depth] [float],
+  [val_datum_elevation] [float],
+  [des_datum_name] [nvarchar] (4000),
+  [fec_completed_start] [datetime2],
+  [fec_completed_end] [datetime2],
+  [fec_create_date] [datetime2],
+  [fec_update_date] [datetime2],
+  [fec_update_cds] [datetime2],
+  [des_business_unit] [nvarchar] (4000),
+  [des_dev_area] [nvarchar] (4000)
+
+)
+WITH
+(
+	DISTRIBUTION = REPLICATE,
+	CLUSTERED INDEX (id_vers)
+)
+GO

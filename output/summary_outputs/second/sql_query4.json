@@ -1,0 +1,22 @@
+{
+  "file_path": "input\\sql_server_input_files\\second\\sql_query4.sql",
+  "source_platform": "Others",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "customer": [
+      "customer_id",
+      "customer_name",
+      "status"
+    ],
+    "sales": [
+      "customer_id",
+      "sales_amount"
+    ]
+  },
+  "functions": [
+    "SUM"
+  ],
+  "technical_summary": "The source SQL query generates a list of the top 10 'customer_id' and 'customer_name' with their 'total_sales' where the 'total_sales' is greater than 1000 and the customer status is 'ACTIVE'. The query starts by creating a CTE named 'CustomerSales' that joins the 'customer' and 'sales' tables on 'customer_id' using an INNER JOIN. It filters the 'customer' table to only include rows where 'status' is 'ACTIVE'. The joined data is then grouped by 'customer_id' and 'customer_name', and the 'total_sales' is calculated for each group using the 'SUM' aggregation function on 'sales_amount'. The outer query selects 'customer_id', 'customer_name', and 'total_sales' from the 'CustomerSales' CTE, filters the results to include only rows where 'total_sales' is greater than 1000, and orders the results by 'total_sales' in descending order. The query limits the output to the top 10 rows.",
+  "summary_error": null
+}

@@ -1,0 +1,17 @@
+{
+  "file_path": "input\\sql_server_input_files\\second\\input_sql2.sql",
+  "source_platform": "Others",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "employee": [
+      "employee_id",
+      "employee_name",
+      "manager_id"
+    ],
+    "EmployeeHierarchy": []
+  },
+  "functions": [],
+  "technical_summary": "The SQL query is designed to retrieve the employee hierarchy from the 'employee' table. It starts by selecting employees with no 'manager_id' (top-level employees) and assigns them a 'hierarchy_level' of 1. Then, it recursively selects employees who report to the previously selected employees, incrementing the 'hierarchy_level'. The recursive operation is performed using a Common Table Expression (CTE) named 'EmployeeHierarchy'. The final result is ordered by 'hierarchy_level' and 'employee_id'. The query uses a UNION ALL operation to combine the anchor query (top-level employees) with the recursive query (employees reporting to previously selected employees). The CTE 'EmployeeHierarchy' is defined with an anchor query that selects from the 'employee' table where 'manager_id' IS NULL, and a recursive query that INNER JOINs 'employee' with 'EmployeeHierarchy' on 'e.manager_id = eh.employee_id'. The final SELECT statement retrieves 'employee_id', 'employee_name', 'manager_id', and 'hierarchy_level' from 'EmployeeHierarchy' and orders the results by 'hierarchy_level' and 'employee_id'.",
+  "summary_error": null
+}

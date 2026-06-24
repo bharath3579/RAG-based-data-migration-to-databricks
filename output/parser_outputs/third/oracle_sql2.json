@@ -1,0 +1,74 @@
+{
+  "tables": [
+    "target_customers",
+    "SET"
+  ],
+  "aliases": {
+    "t": "SET"
+  },
+  "joins": [],
+  "filters": null,
+  "select": null,
+  "group_by": null,
+  "having": null,
+  "order_by": null,
+  "row_limit": null,
+  "functions": [
+    "INSERT",
+    "VALUES"
+  ],
+  "aggregations": [],
+  "function_calls": [
+    {
+      "function": "INSERT",
+      "expression": "INSERT ( customer_id, customer_name, city )",
+      "arguments": [
+        {
+          "expression": "customer_id",
+          "function_calls": []
+        },
+        {
+          "expression": "customer_name",
+          "function_calls": []
+        },
+        {
+          "expression": "city",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "INSERT"
+      ]
+    },
+    {
+      "function": "VALUES",
+      "expression": "VALUES ( s.customer_id, s.customer_name, s.city )",
+      "arguments": [
+        {
+          "expression": "s.customer_id",
+          "function_calls": []
+        },
+        {
+          "expression": "s.customer_name",
+          "function_calls": []
+        },
+        {
+          "expression": "s.city",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "VALUES"
+      ]
+    }
+  ],
+  "clause_expressions": {
+    "select": [],
+    "where": [],
+    "group_by": [],
+    "having": [],
+    "order_by": []
+  }
+}

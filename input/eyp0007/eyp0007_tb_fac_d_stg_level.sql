@@ -1,0 +1,53 @@
+CREATE TABLE [sch_anl].[eyp0007_tb_fac_d_stg_level]
+(
+    [cod_vers_wellbore] [nvarchar] (4000) NOT NULL,
+    [cod_vers_well_string] [nvarchar] (4000) NOT NULL,
+    [cod_vers_well] [nvarchar] (4000) NOT NULL,
+    [cod_uwbi] [varchar] (26), 
+    [cod_api12] [varchar] (26), 
+    [cod_uwbi_num_stage] [varchar] (4000),
+    [num_stage] [int],
+    [val_interval_top] [float],
+    [val_interval_base] [float],
+    [val_stage_mid_perf_depth] [float],
+    [val_stage_mid_perf_depth_tvd] [float],
+    [val_prefrac_isip] [float],
+    [val_completed_length] [float],
+    [val_prefrac_isip_gradient] [float],
+    [val_postfrac_isip] [float],
+    [val_postfrac_isip_gradient] [float],
+    [avg_treating_pressure] [float],
+    [max_treating_pressure] [float],
+    [avg_pump_rate] [float],
+    [max_pump_rate] [float],
+    [val_total_proppant] [float],
+    [val_stage_clean_fluid] [float],
+    [val_stage_slurry_volume] [float],
+    [val_stage_acid_volume] [float],
+    [val_slickwater] [float],
+    [val_fresh_water] [float],
+    [val_flowback_water] [float],
+    [val_linear_gel] [float],
+    [val_stage_crosslnk_gel_volume] [float],
+    [val_stg_frac_flowback_water] [float],
+    [val_stage_100mesh_sand_volume] [float],
+    [val_stage_40_70_sand_volume] [float],
+    [val_stage_30_50_sand_volume] [float],
+    [val_stage_20_40_sand_volume] [float],
+    [fec_com_date] [datetime],
+    [des_stg_geost_interval] [nvarchar] (4000),
+    [val_flag_anomaly_isip_gradient] [int],
+    [val_flag_anomaly_sand_proportion] [int],
+    [val_flag_anomaly_fluid_proportion] [int],
+    [num_perforations] [int],
+    [val_latitude] [float],
+    [val_longitude] [float],
+    [val_perf_base] [float],
+    [val_perf_top] [float]
+)
+WITH
+(
+  DISTRIBUTION = HASH(cod_uwbi),
+  CLUSTERED COLUMNSTORE INDEX
+)
+GO

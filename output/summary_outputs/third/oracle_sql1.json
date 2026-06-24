@@ -1,0 +1,26 @@
+{
+  "file_path": "input\\sql_server_input_files\\third\\oracle_sql1.sql",
+  "source_platform": "Others",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "employees": [
+      "employee_id",
+      "first_name",
+      "last_name",
+      "department_id",
+      "salary"
+    ],
+    "departments": [
+      "department_id",
+      "department_name"
+    ]
+  },
+  "functions": [
+    "GETEMPLOYEEDETAILS",
+    "IN",
+    "PUT_LINE"
+  ],
+  "technical_summary": "The source SQL creates a stored procedure 'GetEmployeeDetails' that takes a department ID 'p_dept_id' as input. It then selects 'employee_id', 'first_name', 'last_name' from the 'employees' table, 'department_name' from the 'departments' table where the 'department_id' matches 'p_dept_id', joining 'employees' and 'departments' on 'department_id'. The results are ordered by 'salary' in descending order. The procedure then iterates over the result set and prints each row using 'DBMS_OUTPUT.PUT_LINE'. The final output includes columns 'employee_id', 'first_name', 'last_name', 'department_name', and 'salary'. The source tables are 'employees' and 'departments', joined using an INNER JOIN on 'department_id'. The filter condition is 'e.department_id = p_dept_id'. The results are ordered by 'e.salary' in descending order.",
+  "summary_error": null
+}

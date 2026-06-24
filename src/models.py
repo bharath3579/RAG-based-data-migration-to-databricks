@@ -13,6 +13,11 @@ class TestCasesResult(BaseModel):
     tables: List[TestTable] = Field(description="List of tables needed to execute the query, complete with their DDLs and 3 synthetic datasets.")
     reasoning: str = Field(description="Explanation of the generated data cases.")
 
+class MigrationMetrics(BaseModel):
+    confidence: int = Field(description="Confidence score of the migration out of 100.")
+    unsupported_features: List[str] = Field(description="List of unsupported features that couldn't be natively converted.")
+    manual_review_required: bool = Field(description="True if human intervention is required.")
+
 class TranslationResult(BaseModel):
     final_mapped_sql: str = Field(description="The final converted Databricks SQL using the provided catalog/schema mapping.")
     test_databricks_sql: str = Field(description="The converted Databricks SQL adapted for testing in the environment-specified catalog/schema.")
@@ -21,6 +26,8 @@ class TranslationResult(BaseModel):
 
 class SummaryResult(BaseModel):
     failure_summary: str = Field(description="Concise summary explaining why the migration or validation failed.")
+    unsupported_features: List[str] = Field(default_factory=list, description="List of unsupported features that couldn't be natively converted.")
+    unsupported_features: List[str] = Field(default_factory=list, description="List of unsupported features that couldn't be natively converted.")
 
 class CodeSummaryResult(BaseModel):
     source_platform: str = Field(description="Detected or user-provided source platform.")

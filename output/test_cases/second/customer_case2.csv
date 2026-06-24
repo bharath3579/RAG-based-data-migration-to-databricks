@@ -1,0 +1,21 @@
+customer_id,customer_name,status
+1,ABC Inc.,ACTIVE
+2,XYZ Corp.,INACTIVE
+3,DEF Ltd.,ACTIVE
+4,GHI Enterprises,ACTIVE
+5,JKL Industries,INACTIVE
+6,MNO Ventures,ACTIVE
+7,PQR Holdings,ACTIVE
+8,STU Solutions,INACTIVE
+9,VWX Technologies,ACTIVE
+10,YZA Innovations,ACTIVE
+11,BCD Systems,ACTIVE
+12,EFG Services,INACTIVE
+13,HIJ Ventures,ACTIVE
+14,KLM Holdings,ACTIVE
+15,NOP Industries,INACTIVE
+16,QRS Technologies,ACTIVE
+17,TUV Innovations,ACTIVE
+18,WXY Solutions,INACTIVE
+19,ZAB Systems,ACTIVE
+20,CDE Services,ACTIVE

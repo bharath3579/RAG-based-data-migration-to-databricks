@@ -1,0 +1,1 @@
+Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'1': 1}]

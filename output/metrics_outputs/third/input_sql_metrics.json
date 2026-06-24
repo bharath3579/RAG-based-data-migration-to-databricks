@@ -1,0 +1,7 @@
+{
+  "confidence": 100,
+  "unsupported_features": [
+    "dynamic_sql"
+  ],
+  "manual_review_required": true
+}

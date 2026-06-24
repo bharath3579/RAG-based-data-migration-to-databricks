@@ -1,0 +1,15 @@
+{
+  "file_path": "input\\sql_server_input_files\\input_sql.sql",
+  "source_platform": "Others",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "tables": [],
+    "aliases": {}
+  },
+  "functions": [
+    "NVARCHAR"
+  ],
+  "technical_summary": "The source SQL declares a variable '@EmployeeName' of type 'NVARCHAR(100)', assigns it the value 'John', and then prints the variable's value. The SQL does not involve any table operations or data retrieval. The final output intent is to display the value of '@EmployeeName'. The source code uses a 'DECLARE' statement to define the variable, a 'SET' statement to assign the value, and a 'PRINT' statement to output the result. No tables, joins, filters, aggregations, or other data manipulation operations are performed.",
+  "summary_error": null
+}

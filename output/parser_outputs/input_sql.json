@@ -1,0 +1,38 @@
+{
+  "tables": [],
+  "aliases": {},
+  "joins": [],
+  "filters": null,
+  "select": null,
+  "group_by": null,
+  "having": null,
+  "order_by": null,
+  "row_limit": null,
+  "functions": [
+    "NVARCHAR"
+  ],
+  "aggregations": [],
+  "function_calls": [
+    {
+      "function": "NVARCHAR",
+      "expression": "NVARCHAR(100)",
+      "arguments": [
+        {
+          "expression": "100",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "NVARCHAR"
+      ]
+    }
+  ],
+  "clause_expressions": {
+    "select": [],
+    "where": [],
+    "group_by": [],
+    "having": [],
+    "order_by": []
+  }
+}

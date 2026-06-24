@@ -1,0 +1,9 @@
+{
+  "confidence": 0,
+  "unsupported_features": [
+    "dbms_output.put_line",
+    "dbms_output",
+    "for rec in (cursor loop)"
+  ],
+  "manual_review_required": true
+}

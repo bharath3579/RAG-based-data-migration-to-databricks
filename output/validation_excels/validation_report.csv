@@ -1,3 +1,34 @@
-file_path,conversion_status,validation_status,details
-input\sql_server_input_files\third\oracle_sql2.sql,SUCCESS,PASS,"Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'num_affected_rows': 20, 'num_updated_rows': 19, 'num_deleted_rows': 0, 'num_inserted_rows': 1}]
+file_path,conversion_status,validation_status,total_tokens,retries,details
+input\sql_server_input_files\input_sql.sql,SUCCESS,PASS,2352,0,"Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'EmployeeName': 'John'}]
+"
+input\sql_server_input_files\sql3.sql,SUCCESS,PASS,5831,0,"Case 2: Passed on Databricks (Source execution skipped). Row count: 10. Data Sample: [{'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}]
+"
+input\sql_server_input_files\second\input_sql2.sql,SUCCESS,PASS,22382,2,"Case 2: Passed on Databricks (Source execution skipped). Row count: 0. Data Sample: []
+"
+input\sql_server_input_files\second\sql_query4.sql,SUCCESS,PASS,4430,0,"Case 2: Passed on Databricks (Source execution skipped). Row count: 9. Data Sample: [{'customer_id': 6, 'customer_name': 'MNO Ventures', 'total_sales': Decimal('4500.00')}, {'customer_id': 17, 'customer_name': 'TUV Innovations', 'total_sales': Decimal('2800.00')}, {'customer_id': 3, 'customer_name': 'DEF Ltd.', 'total_sales': Decimal('2500.00')}, {'customer_id': 7, 'customer_name': 'PQR Holdings', 'total_sales': Decimal('2500.00')}, {'customer_id': 11, 'customer_name': 'BCD Systems', 'total_sales': Decimal('2200.00')}]
+"
+input\sql_server_input_files\third\input_sql.sql,SUCCESS,PASS,2371,0,"Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'1': 1}]
+"
+input\sql_server_input_files\third\oracle_sql1.sql,SUCCESS,FAIL,35056,2,"Databricks Syntax Error: 
+[PARSE_SYNTAX_ERROR] Syntax error at or near 'IN'. SQLSTATE: 42601 (line 4, pos 10)
+
+== SQL ==
+CREATE OR REPLACE PROCEDURE GetEmployeeDetails(p_dept_id INT)
+LANGUAGE SQL
+BEGIN
+  FOR rec IN (
+----------^^^
+    SELECT CONCAT(e.employee_id, ' - ', e.first_name, ' ', e.last_name, ' - ', d.department_name, ' - ', e.salary) AS output
+    FROM employees e
+    INNER JOIN departments d
+      ON e.department_id = d.department_id
+    WHERE e.department_id = p_dept_id
+    ORDER BY e.salary DESC
+  )
+  DO
+    SELECT rec.output
+"
+input\sql_server_input_files\third\oracle_sql2.sql,SUCCESS,PASS,4013,0,"Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'num_affected_rows': 20, 'num_updated_rows': 19, 'num_deleted_rows': 0, 'num_inserted_rows': 1}]
+"
+input\sql_server_input_files\third\oracle_sql3.sql,SUCCESS,PASS,3648,0,"Case 2: Passed on Databricks (Source execution skipped). Row count: 20. Data Sample: [{'employee_name': 'George Thompson', 'department_name': 'Finance'}, {'employee_name': 'Nancy Jenkins', 'department_name': 'Research'}, {'employee_name': 'Edward Harris', 'department_name': 'Marketing'}, {'employee_name': 'Alice Johnson', 'department_name': 'HR'}, {'employee_name': 'Quincy Wright', 'department_name': 'IT'}]
 "

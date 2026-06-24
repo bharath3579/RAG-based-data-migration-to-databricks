@@ -1,0 +1,223 @@
+{
+  "tables": [
+    "customer",
+    "sales",
+    "CustomerSales",
+    "RegionSummary",
+    "region"
+  ],
+  "aliases": {
+    "c": "customer",
+    "s": "sales",
+    "cs": "CustomerSales",
+    "rs": "RegionSummary",
+    "r": "region"
+  },
+  "joins": [
+    {
+      "join_type": "INNER JOIN",
+      "table": "sales",
+      "alias": "s",
+      "condition": "c.customer_id = s.customer_id"
+    },
+    {
+      "join_type": "INNER JOIN",
+      "table": "RegionSummary",
+      "alias": "rs",
+      "condition": "cs.region_id = rs.region_id"
+    },
+    {
+      "join_type": "LEFT JOIN",
+      "table": "region",
+      "alias": "r",
+      "condition": "cs.region_id = r.region_id"
+    }
+  ],
+  "filters": "c.status = 'ACTIVE'",
+  "select": "c.customer_id, c.customer_name, c.region_id, SUM(s.sales_amount) AS total_sales",
+  "group_by": "c.customer_id, c.customer_name, c.region_id ), RegionSummary AS ( SELECT region_id, COUNT(*) AS customer_count FROM CustomerSales GROUP BY region_id ) SELECT TOP 10 cs.customer_id, cs.customer_name, r.region_name, cs.total_sales, rs.customer_count FROM CustomerSales cs INNER JOIN RegionSummary rs ON cs.region_id = rs.region_id LEFT JOIN region r ON cs.region_id = r.region_id WHERE cs.total_sales > 1000",
+  "having": null,
+  "order_by": "cs.total_sales DESC",
+  "row_limit": null,
+  "functions": [
+    "SUM",
+    "COUNT"
+  ],
+  "aggregations": [
+    "SUM",
+    "COUNT"
+  ],
+  "function_calls": [
+    {
+      "function": "SUM",
+      "expression": "SUM(s.sales_amount)",
+      "arguments": [
+        {
+          "expression": "s.sales_amount",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "SUM"
+      ]
+    },
+    {
+      "function": "COUNT",
+      "expression": "COUNT(*)",
+      "arguments": [
+        {
+          "expression": "*",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "COUNT"
+      ]
+    }
+  ],
+  "clause_expressions": {
+    "select": [
+      {
+        "expression": "c.customer_id",
+        "source_expression": "c.customer_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "c.customer_name",
+        "source_expression": "c.customer_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "c.region_id",
+        "source_expression": "c.region_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "SUM(s.sales_amount) AS total_sales",
+        "source_expression": "SUM(s.sales_amount)",
+        "alias": "total_sales",
+        "function_calls": [
+          {
+            "function": "SUM",
+            "expression": "SUM(s.sales_amount)",
+            "arguments": [
+              {
+                "expression": "s.sales_amount",
+                "function_calls": []
+              }
+            ],
+            "nested_functions": [],
+            "evaluation_order": [
+              "SUM"
+            ]
+          }
+        ],
+        "evaluation_order": [
+          "SUM"
+        ]
+      }
+    ],
+    "where": [
+      {
+        "expression": "c.status = 'ACTIVE'",
+        "source_expression": "c.status = 'ACTIVE'",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ],
+    "group_by": [
+      {
+        "expression": "c.customer_id",
+        "source_expression": "c.customer_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "c.customer_name",
+        "source_expression": "c.customer_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "c.region_id )",
+        "source_expression": "c.region_id )",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "RegionSummary AS ( SELECT region_id, COUNT(*) AS customer_count FROM CustomerSales GROUP BY region_id ) SELECT TOP 10 cs.customer_id",
+        "source_expression": "RegionSummary AS ( SELECT region_id, COUNT(*) AS customer_count FROM CustomerSales GROUP BY region_id ) SELECT TOP 10 cs.customer_id",
+        "alias": null,
+        "function_calls": [
+          {
+            "function": "COUNT",
+            "expression": "COUNT(*)",
+            "arguments": [
+              {
+                "expression": "*",
+                "function_calls": []
+              }
+            ],
+            "nested_functions": [],
+            "evaluation_order": [
+              "COUNT"
+            ]
+          }
+        ],
+        "evaluation_order": [
+          "COUNT"
+        ]
+      },
+      {
+        "expression": "cs.customer_name",
+        "source_expression": "cs.customer_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "r.region_name",
+        "source_expression": "r.region_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "cs.total_sales",
+        "source_expression": "cs.total_sales",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "rs.customer_count FROM CustomerSales cs INNER JOIN RegionSummary rs ON cs.region_id = rs.region_id LEFT JOIN region r ON cs.region_id = r.region_id WHERE cs.total_sales > 1000",
+        "source_expression": "rs.customer_count FROM CustomerSales cs INNER JOIN RegionSummary rs ON cs.region_id = rs.region_id LEFT JOIN region r ON cs.region_id = r.region_id WHERE cs.total_sales > 1000",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ],
+    "having": [],
+    "order_by": [
+      {
+        "expression": "cs.total_sales DESC",
+        "source_expression": "cs.total_sales DESC",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ]
+  }
+}

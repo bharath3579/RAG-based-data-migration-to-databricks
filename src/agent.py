@@ -24,18 +24,19 @@ def _enforce_json(prompt: str, schema) -> str:
     schema_desc = json.dumps(structure)
     return prompt + f"\n\n[OUTPUT INSTRUCTIONS]:\nReturn ONLY a valid JSON object matching this schema EXACTLY. Do not include markdown formatting or extra text outside the JSON.\nExample Format: {schema_desc}\nStrict Schema: {schema.model_json_schema()}"
 
-def _completion_json_content(completion, operation: str) -> str:
+def _completion_json_content(completion, operation: str) -> tuple[str, int]:
     message = completion.choices[0].message
     content = message.content
+    tokens = completion.usage.total_tokens if completion.usage else 0
     if content is None:
         refusal = getattr(message, "refusal", None)
         finish_reason = getattr(completion.choices[0], "finish_reason", None)
         raise ValueError(
             f"{operation} returned no JSON content. finish_reason={finish_reason}; refusal={refusal}"
         )
-    return content
+    return content, tokens
 
-def _retrieve_spark_functions(source_code: str, source_functions: list[str]) -> str:
+def _retrieve_spark_functions(source_code: str, source_functions: list[str]) -> tuple[str, int]:
     client = get_client()
     model = _get_model()
     
@@ -61,23 +62,25 @@ Return ONLY a JSON list of clean architectural search keywords (e.g., 'temporary
             ],
             response_format={"type": "json_object"}
         )
-        mapped = SparkFunctionNames.model_validate_json(_completion_json_content(completion, "Keyword mapping"))
+        json_content, tokens = _completion_json_content(completion, "Keyword mapping")
+        mapped = SparkFunctionNames.model_validate_json(json_content)
         search_keywords = [n.lower() for n in mapped.function_names]
         print(f"\n[RAG] Extracted search keywords: {search_keywords}")
     except Exception as e:
+        tokens = 0
         print(f"Warning: Failed to extract keywords: {e}")
         search_keywords = [n.lower() for n in source_functions]
         print(f"\n[RAG] Fallback search keywords: {search_keywords}")
         
     if not search_keywords:
-        return ""
+        return "", tokens
         
     try:
         import chromadb
         db_path = os.path.abspath("rag/chroma_db")
         if not os.path.exists(db_path):
             print(f"[RAG] Warning: ChromaDB not found at {db_path}. Skipping RAG.")
-            return ""
+            return "", tokens
             
         # Optional optimization: Hide the noisy chromadb logging
         import logging
@@ -112,7 +115,7 @@ Return ONLY a JSON list of clean architectural search keywords (e.g., 'temporary
         metadatas = list(unique_docs.values())
         
         if not docs:
-            return ""
+            return "", tokens
             
         print("\n[RAG] Retrieved exact documentation chunks from Vector DB:")
         for m in metadatas:
@@ -123,16 +126,16 @@ Return ONLY a JSON list of clean architectural search keywords (e.g., 'temporary
             meta = metadatas[i]
             formatted_docs.append(f"--- Documentation Excerpt from: {meta.get('title')} ({meta.get('url')}) ---\n{doc}\n")
             
-        return "\n".join(formatted_docs)
+        return "\n".join(formatted_docs), tokens
         
     except ImportError:
         print("\n[RAG] Warning: 'chromadb' package not installed. Skipping semantic RAG.")
-        return ""
+        return "", tokens
     except Exception as e:
         print(f"\n[RAG] Vector DB search failed: {e}")
-        return ""
+        return "", tokens
 
-def translate_sql(source_sql: str, source_dialect: str, target_dialect: str, mapping_rules: str, errors: str = None, user_feedback: str = None, code_summary: dict = None) -> TranslationResult:
+def translate_sql(source_sql: str, source_dialect: str, target_dialect: str, mapping_rules: str, errors: str = None, user_feedback: str = None, code_summary: dict = None) -> tuple[TranslationResult, int]:
     client = get_client()
     model = _get_model()
     
@@ -162,13 +165,16 @@ For test_sql_server_sql, if a CTE appears after any prior statement in the same 
 
 ARCHITECTURAL CONVERSION CONSTRAINTS:
 1. When converting variable declarations (`DECLARE @var`), you MUST preserve the variable architecture. Do NOT inline variables into statements. Use `DECLARE OR REPLACE VARIABLE var_name ...` followed by `SET VAR var_name = ...` and `EXECUTE IMMEDIATE`.
+
 """
     if custom_rules:
         system_prompt += f"\nADDITIONAL CONVERSION SKILLS & GUIDELINES:\n{custom_rules}\n"
         
     if code_summary:
+        total_tokens = 0
         functions_list = code_summary.get("functions", [])
-        rag_context = _retrieve_spark_functions(source_sql, functions_list)
+        rag_context, rag_tokens = _retrieve_spark_functions(source_sql, functions_list)
+        total_tokens += rag_tokens
         if rag_context:
             system_prompt += f"\nSPARK SQL FUNCTION REFERENCES:\n{rag_context}\n"
             system_prompt += """
@@ -211,9 +217,12 @@ When fixing errors, repair the exact output that failed:
         ],
         response_format={"type": "json_object"}
     )
-    return TranslationResult.model_validate_json(_completion_json_content(completion, "SQL translation"))
+    json_content, tokens = _completion_json_content(completion, "SQL translation")
+    total_tokens += tokens
+    mapped = TranslationResult.model_validate_json(json_content)
+    return mapped, total_tokens
 
-def generate_sql_test_cases(source_sql: str, code_summary: dict = None, error_feedback: str = None) -> TestCasesResult:
+def generate_sql_test_cases(source_sql: str, code_summary: dict = None, error_feedback: str = None) -> tuple[TestCasesResult, int]:
     client = get_client()
     model = _get_model()
     custom_rules = _load_skills()
@@ -261,7 +270,8 @@ RULES:
         ],
         response_format={"type": "json_object"}
     )
-    return TestCasesResult.model_validate_json(_completion_json_content(completion, "Testcase generation"))
+    json_content, tokens = _completion_json_content(completion, "Testcase generation")
+    return TestCasesResult.model_validate_json(json_content), tokens
 
 def summarize_sql(source_sql: str, parser_output: dict, source_platform: str, target_platform: str) -> CodeSummaryResult:
     client = get_client()
@@ -305,7 +315,8 @@ Return a detailed structured summary. The technical_summary should be concise bu
         ],
         response_format={"type": "json_object"}
     )
-    return CodeSummaryResult.model_validate_json(_completion_json_content(completion, "Code summarization"))
+    json_content, tokens = _completion_json_content(completion, "Code summarization")
+    return CodeSummaryResult.model_validate_json(json_content), tokens
 
 def summarize_pyspark(source_code: str, parser_output: dict, source_platform: str, target_platform: str) -> CodeSummaryResult:
     all_functions = set()
@@ -313,11 +324,13 @@ def summarize_pyspark(source_code: str, parser_output: dict, source_platform: st
     cell_summaries = []
     
     cells = parser_output.get("cells", [])
+    total_tokens = 0
     
     for idx, cell in enumerate(cells, 1):
         cell_code = cell.get("code_snippet", "")
         # Call the helper for each cell
-        cell_result = _summarize_pyspark_cell(cell_code, cell, source_platform, target_platform, cell.get("cell_index", idx))
+        cell_result, tokens = _summarize_pyspark_cell(cell_code, cell, source_platform, target_platform, cell.get("cell_index", idx))
+        total_tokens += tokens
         
         all_functions.update(cell_result.functions)
         all_tables.update(cell_result.tables_and_schema)
@@ -333,9 +346,9 @@ def summarize_pyspark(source_code: str, parser_output: dict, source_platform: st
         technical_summary=final_summary,
         tables_and_schema=all_tables,
         functions=list(all_functions)
-    )
+    ), total_tokens
 
-def _summarize_pyspark_cell(cell_code: str, cell_metadata: dict, source_platform: str, target_platform: str, cell_index: int) -> CodeSummaryResult:
+def _summarize_pyspark_cell(cell_code: str, cell_metadata: dict, source_platform: str, target_platform: str, cell_index: int) -> tuple[CodeSummaryResult, int]:
     client = get_client()
     model = _get_model()
 
@@ -385,9 +398,10 @@ Return a detailed structured summary. The technical_summary should be concise bu
         ],
         response_format={"type": "json_object"}
     )
-    return CodeSummaryResult.model_validate_json(_completion_json_content(completion, "PySpark summarization"))
+    json_content, tokens = _completion_json_content(completion, "PySpark summarization")
+    return CodeSummaryResult.model_validate_json(json_content), tokens
 
-def translate_pyspark(source_code: str, source_dialect: str, target_dialect: str, mapping_rules: str, errors: str = None, user_feedback: str = None, code_summary: dict = None) -> PySparkTranslationResult:
+def translate_pyspark(source_code: str, source_dialect: str, target_dialect: str, mapping_rules: str, errors: str = None, user_feedback: str = None, code_summary: dict = None) -> tuple[PySparkTranslationResult, int]:
     client = get_client()
     model = _get_model()
     
@@ -405,13 +419,16 @@ You must generate THREE versions of the converted code:
 3. 'test_source_code': A version of the PySpark code for execution in the {source_dialect} environment. CRITICAL: For testing only, you MUST IGNORE the mapping rules completely and use the EXACT ORIGINAL base table names from the source code. DO NOT add any prefixes at all! STRICT PROMPT: Do not hallucinate any prefixes or mapped names.
 
 Strictly follow native PySpark syntax.
+
 """
     if custom_rules:
         system_prompt += f"\nADDITIONAL CONVERSION SKILLS & GUIDELINES:\n{custom_rules}\n"
         
     if code_summary:
+        total_tokens = 0
         functions_list = code_summary.get("functions", [])
-        rag_context = _retrieve_spark_functions(source_code, functions_list)
+        rag_context, rag_tokens = _retrieve_spark_functions(source_code, functions_list)
+        total_tokens += rag_tokens
         if rag_context:
             system_prompt += f"\nPYSPARK API DOCUMENTATION REFERENCES:\n{rag_context}\n"
             system_prompt += """
@@ -441,13 +458,15 @@ STRICT ANTI-HALLUCINATION DIRECTIVES:
         ],
         response_format={"type": "json_object"}
     )
-    return PySparkTranslationResult.model_validate_json(_completion_json_content(completion, "PySpark translation"))
+    json_content, tokens = _completion_json_content(completion, "PySpark translation")
+    mapped = PySparkTranslationResult.model_validate_json(json_content)
+    return mapped, total_tokens + tokens
 
-def summarize_failure(source_sql: str, errors: str) -> SummaryResult:
+def summarize_failure(source_sql: str, errors: str) -> tuple[SummaryResult, int]:
     client = get_client()
     model = _get_model()
     
-    system_prompt = "You are a senior debugger. Explain technical SQL failures in clear, actionable human language."
+    system_prompt = "You are a senior debugger. Explain technical SQL failures in clear, actionable human language. If the failure is due to unsupported features (e.g. cursors, dynamic sql, while loops), extract them into the `unsupported_features` array."
     
     prompt = f"Explain why this translation or validation failed:\nSQL: {source_sql}\nErrors: {errors}\n"
     prompt = _enforce_json(prompt, SummaryResult)
@@ -460,9 +479,10 @@ def summarize_failure(source_sql: str, errors: str) -> SummaryResult:
         ],
         response_format={"type": "json_object"}
     )
-    return SummaryResult.model_validate_json(_completion_json_content(completion, "Failure summarization"))
+    json_content, tokens = _completion_json_content(completion, "Failure summarization")
+    return SummaryResult.model_validate_json(json_content), tokens
 
-def analyze_validation_failure(source_sql: str, source_dialect: str, target_dialect: str, source_test_sql: str, target_test_sql: str, raw_error: str) -> str:
+def analyze_validation_failure(source_sql: str, source_dialect: str, target_dialect: str, source_test_sql: str, target_test_sql: str, raw_error: str) -> tuple[SummaryResult, int]:
     """Intelligent feedback loop agent that analyzes mismatch errors."""
     client = get_client()
     model = _get_model()
@@ -508,8 +528,9 @@ Return ONLY a JSON object with a single string field named `failure_summary`.
             ],
             response_format={"type": "json_object"}
         )
-        res = SummaryResult.model_validate_json(_completion_json_content(completion, "Intelligent Validation Analysis"))
-        return res.failure_summary
+        json_content, tokens = _completion_json_content(completion, "Intelligent Validation Analysis")
+        res = SummaryResult.model_validate_json(json_content)
+        return res, tokens
     except Exception as e:
-        return f"Intelligent Analysis Failed ({e}). Raw error: {raw_error}"
+        return SummaryResult(failure_summary=f"AI Analysis Failed: {e}"), 0
 

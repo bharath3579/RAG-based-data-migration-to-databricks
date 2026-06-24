@@ -1,0 +1,21 @@
+employee_id,employee_name,manager_id
+1,John Doe,
+2,Jane Smith,1.0
+3,Sam Brown,1.0
+4,Alice Johnson,2.0
+5,Bob Williams,2.0
+6,Charlie Davis,3.0
+7,Diana Miller,3.0
+8,Eve Wilson,4.0
+9,Frank Moore,4.0
+10,Grace Taylor,5.0
+11,Henry Anderson,5.0
+12,Ivy Thomas,6.0
+13,Jack Jackson,6.0
+14,Katherine White,7.0
+15,Liam Harris,7.0
+16,Mia Martin,8.0
+17,Noah Thompson,8.0
+18,Olivia Garcia,9.0
+19,Paul Martinez,9.0
+20,Quincy Robinson,10.0

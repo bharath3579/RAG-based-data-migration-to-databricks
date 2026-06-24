@@ -1,0 +1,82 @@
+{
+  "tables": [
+    "employees"
+  ],
+  "aliases": {
+    "e": "employees"
+  },
+  "joins": [],
+  "filters": "e.department_id = d.department_id(+)",
+  "select": "e.employee_name, d.department_name",
+  "group_by": null,
+  "having": null,
+  "order_by": null,
+  "row_limit": null,
+  "functions": [
+    "DEPARTMENT_ID"
+  ],
+  "aggregations": [],
+  "function_calls": [
+    {
+      "function": "DEPARTMENT_ID",
+      "expression": "department_id(+)",
+      "arguments": [
+        {
+          "expression": "+",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "DEPARTMENT_ID"
+      ]
+    }
+  ],
+  "clause_expressions": {
+    "select": [
+      {
+        "expression": "e.employee_name",
+        "source_expression": "e.employee_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "d.department_name",
+        "source_expression": "d.department_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ],
+    "where": [
+      {
+        "expression": "e.department_id = d.department_id(+)",
+        "source_expression": "e.department_id = d.department_id(+)",
+        "alias": null,
+        "function_calls": [
+          {
+            "function": "DEPARTMENT_ID",
+            "expression": "department_id(+)",
+            "arguments": [
+              {
+                "expression": "+",
+                "function_calls": []
+              }
+            ],
+            "nested_functions": [],
+            "evaluation_order": [
+              "DEPARTMENT_ID"
+            ]
+          }
+        ],
+        "evaluation_order": [
+          "DEPARTMENT_ID"
+        ]
+      }
+    ],
+    "group_by": [],
+    "having": [],
+    "order_by": []
+  }
+}

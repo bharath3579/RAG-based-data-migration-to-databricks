@@ -1,0 +1,21 @@
+{
+  "file_path": "input\\sql_server_input_files\\third\\oracle_sql3.sql",
+  "source_platform": "Others",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "employees": [
+      "employee_name",
+      "department_id"
+    ],
+    "departments": [
+      "department_name",
+      "department_id"
+    ]
+  },
+  "functions": [
+    "DEPARTMENT_ID"
+  ],
+  "technical_summary": "The final output intent is to retrieve 'employee_name' and 'department_name' from the 'employees' and 'departments' tables. The source data involves two base tables: 'employees' aliased as 'e' and 'departments' aliased as 'd'. The SQL performs a LEFT JOIN between 'employees' and 'departments' on the condition 'e.department_id = d.department_id(+)' where '(+)' denotes a LEFT JOIN in Oracle syntax. The 'WHERE' clause applies this join condition. The 'SELECT' clause projects 'e.employee_name' and 'd.department_name' as the final output columns. There are no aggregations, grouping, or ordering applied. The 'DEPARTMENT_ID' function is used in the context of the '(+)' operator to indicate the LEFT JOIN. The evaluation order involves first applying the join condition and then selecting the specified columns.",
+  "summary_error": null
+}

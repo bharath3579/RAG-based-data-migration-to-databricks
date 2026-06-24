@@ -1,6 +1,195 @@
 {
   "files": [
     {
+      "file_path": "input\\sql_server_input_files\\input_sql.sql",
+      "source_platform": "Others",
+      "target_platform": "databricks",
+      "language": "sql",
+      "tables_and_schema": {
+        "tables": [],
+        "aliases": {}
+      },
+      "functions": [
+        "NVARCHAR"
+      ],
+      "technical_summary": "The source SQL declares a variable '@EmployeeName' of type 'NVARCHAR(100)', assigns it the value 'John', and then prints the variable's value. The SQL does not involve any table operations or data retrieval. The final output intent is to display the value of '@EmployeeName'. The source code uses a 'DECLARE' statement to define the variable, a 'SET' statement to assign the value, and a 'PRINT' statement to output the result. No tables, joins, filters, aggregations, or other data manipulation operations are performed.",
+      "conversion_status": "SUCCESS",
+      "validation_status": "PASS",
+      "total_tokens": 2352,
+      "retries": 0,
+      "metrics": {
+        "confidence": 100,
+        "unsupported_features": [],
+        "manual_review_required": false
+      },
+      "error_message": null,
+      "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'EmployeeName': 'John'}]\n"
+    },
+    {
+      "file_path": "input\\sql_server_input_files\\sql3.sql",
+      "source_platform": "Others",
+      "target_platform": "databricks",
+      "language": "sql",
+      "tables_and_schema": {
+        "customer": [
+          "customer_id",
+          "customer_name",
+          "region_id",
+          "status"
+        ],
+        "sales": [
+          "sales_amount",
+          "customer_id"
+        ],
+        "region": [
+          "region_id",
+          "region_name"
+        ]
+      },
+      "functions": [
+        "SUM",
+        "COUNT"
+      ],
+      "technical_summary": "The SQL query generates a report of top 10 customers by total sales, along with their region name and customer count in that region. The query starts by creating a CTE 'CustomerSales' that joins 'customer' and 'sales' tables on 'customer_id' with an INNER JOIN, filters 'customer' records with 'status' = 'ACTIVE', groups the results by 'customer_id', 'customer_name', and 'region_id', and calculates 'total_sales' using the 'SUM' aggregation function on 'sales_amount'. Another CTE 'RegionSummary' is created, which groups 'CustomerSales' by 'region_id' and counts the number of customers in each region using the 'COUNT' aggregation function. The final result is obtained by joining 'CustomerSales', 'RegionSummary' on 'region_id' with an INNER JOIN, and 'region' on 'region_id' with a LEFT JOIN. The results are filtered to include only customers with 'total_sales' > 1000, sorted in descending order by 'total_sales', and limited to the top 10 records. The final output includes 'customer_id', 'customer_name', 'region_name', 'total_sales', and 'customer_count'.",
+      "conversion_status": "SUCCESS",
+      "validation_status": "PASS",
+      "total_tokens": 5831,
+      "retries": 0,
+      "metrics": {
+        "confidence": 100,
+        "unsupported_features": [],
+        "manual_review_required": false
+      },
+      "error_message": null,
+      "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 10. Data Sample: [{'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}, {'customer_id': 16, 'customer_name': 'WXY Inc.', 'region_name': 'North', 'total_sales': Decimal('3100.00'), 'customer_count': 6}]\n"
+    },
+    {
+      "file_path": "input\\sql_server_input_files\\second\\input_sql2.sql",
+      "source_platform": "Others",
+      "target_platform": "databricks",
+      "language": "sql",
+      "tables_and_schema": {
+        "employee": [
+          "employee_id",
+          "employee_name",
+          "manager_id"
+        ],
+        "EmployeeHierarchy": []
+      },
+      "functions": [],
+      "technical_summary": "The SQL query is designed to retrieve the employee hierarchy from the 'employee' table. It starts by selecting employees with no 'manager_id' (top-level employees) and assigns them a 'hierarchy_level' of 1. Then, it recursively selects employees who report to the previously selected employees, incrementing the 'hierarchy_level'. The recursive operation is performed using a Common Table Expression (CTE) named 'EmployeeHierarchy'. The final result is ordered by 'hierarchy_level' and 'employee_id'. The query uses a UNION ALL operation to combine the anchor query (top-level employees) with the recursive query (employees reporting to previously selected employees). The CTE 'EmployeeHierarchy' is defined with an anchor query that selects from the 'employee' table where 'manager_id' IS NULL, and a recursive query that INNER JOINs 'employee' with 'EmployeeHierarchy' on 'e.manager_id = eh.employee_id'. The final SELECT statement retrieves 'employee_id', 'employee_name', 'manager_id', and 'hierarchy_level' from 'EmployeeHierarchy' and orders the results by 'hierarchy_level' and 'employee_id'.",
+      "conversion_status": "SUCCESS",
+      "validation_status": "PASS",
+      "total_tokens": 22382,
+      "retries": 2,
+      "metrics": {
+        "confidence": 80,
+        "unsupported_features": [],
+        "manual_review_required": false
+      },
+      "error_message": null,
+      "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 0. Data Sample: []\n"
+    },
+    {
+      "file_path": "input\\sql_server_input_files\\second\\sql_query4.sql",
+      "source_platform": "Others",
+      "target_platform": "databricks",
+      "language": "sql",
+      "tables_and_schema": {
+        "customer": [
+          "customer_id",
+          "customer_name",
+          "status"
+        ],
+        "sales": [
+          "customer_id",
+          "sales_amount"
+        ]
+      },
+      "functions": [
+        "SUM"
+      ],
+      "technical_summary": "The source SQL query generates a list of the top 10 'customer_id' and 'customer_name' with their 'total_sales' where the 'total_sales' is greater than 1000 and the customer status is 'ACTIVE'. The query starts by creating a CTE named 'CustomerSales' that joins the 'customer' and 'sales' tables on 'customer_id' using an INNER JOIN. It filters the 'customer' table to only include rows where 'status' is 'ACTIVE'. The joined data is then grouped by 'customer_id' and 'customer_name', and the 'total_sales' is calculated for each group using the 'SUM' aggregation function on 'sales_amount'. The outer query selects 'customer_id', 'customer_name', and 'total_sales' from the 'CustomerSales' CTE, filters the results to include only rows where 'total_sales' is greater than 1000, and orders the results by 'total_sales' in descending order. The query limits the output to the top 10 rows.",
+      "conversion_status": "SUCCESS",
+      "validation_status": "PASS",
+      "total_tokens": 4430,
+      "retries": 0,
+      "metrics": {
+        "confidence": 100,
+        "unsupported_features": [],
+        "manual_review_required": false
+      },
+      "error_message": null,
+      "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 9. Data Sample: [{'customer_id': 6, 'customer_name': 'MNO Ventures', 'total_sales': Decimal('4500.00')}, {'customer_id': 17, 'customer_name': 'TUV Innovations', 'total_sales': Decimal('2800.00')}, {'customer_id': 3, 'customer_name': 'DEF Ltd.', 'total_sales': Decimal('2500.00')}, {'customer_id': 7, 'customer_name': 'PQR Holdings', 'total_sales': Decimal('2500.00')}, {'customer_id': 11, 'customer_name': 'BCD Systems', 'total_sales': Decimal('2200.00')}]\n"
+    },
+    {
+      "file_path": "input\\sql_server_input_files\\third\\input_sql.sql",
+      "source_platform": "Others",
+      "target_platform": "databricks",
+      "language": "sql",
+      "tables_and_schema": {
+        "tables": [],
+        "aliases": {}
+      },
+      "functions": [
+        "NVARCHAR"
+      ],
+      "technical_summary": "The source SQL declares a variable '@sql' of type 'NVARCHAR(MAX)', sets it to the string 'N''SELECT 1''', and then executes the contents of '@sql' using 'EXEC sp_executesql @sql'. The executed SQL is a simple 'SELECT 1', which returns a single row with a single column containing the value '1'. The original SQL does not directly reference any tables or perform any data operations beyond executing a trivial 'SELECT' statement. The 'NVARCHAR(MAX)' type is used for the variable '@sql', indicating it can hold a large string value.",
+      "conversion_status": "SUCCESS",
+      "validation_status": "PASS",
+      "total_tokens": 2371,
+      "retries": 0,
+      "metrics": {
+        "confidence": 100,
+        "unsupported_features": [
+          "dynamic_sql"
+        ],
+        "manual_review_required": true
+      },
+      "error_message": null,
+      "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'1': 1}]\n"
+    },
+    {
+      "file_path": "input\\sql_server_input_files\\third\\oracle_sql1.sql",
+      "source_platform": "Others",
+      "target_platform": "databricks",
+      "language": "sql",
+      "tables_and_schema": {
+        "employees": [
+          "employee_id",
+          "first_name",
+          "last_name",
+          "department_id",
+          "salary"
+        ],
+        "departments": [
+          "department_id",
+          "department_name"
+        ]
+      },
+      "functions": [
+        "GETEMPLOYEEDETAILS",
+        "IN",
+        "PUT_LINE"
+      ],
+      "technical_summary": "The source SQL creates a stored procedure 'GetEmployeeDetails' that takes a department ID 'p_dept_id' as input. It then selects 'employee_id', 'first_name', 'last_name' from the 'employees' table, 'department_name' from the 'departments' table where the 'department_id' matches 'p_dept_id', joining 'employees' and 'departments' on 'department_id'. The results are ordered by 'salary' in descending order. The procedure then iterates over the result set and prints each row using 'DBMS_OUTPUT.PUT_LINE'. The final output includes columns 'employee_id', 'first_name', 'last_name', 'department_name', and 'salary'. The source tables are 'employees' and 'departments', joined using an INNER JOIN on 'department_id'. The filter condition is 'e.department_id = p_dept_id'. The results are ordered by 'e.salary' in descending order.",
+      "conversion_status": "SUCCESS",
+      "validation_status": "FAIL",
+      "total_tokens": 35056,
+      "retries": 2,
+      "metrics": {
+        "confidence": 0,
+        "unsupported_features": [
+          "dbms_output.put_line",
+          "dbms_output",
+          "for rec in (cursor loop)"
+        ],
+        "manual_review_required": true
+      },
+      "error_message": "Databricks Syntax Error: \n[PARSE_SYNTAX_ERROR] Syntax error at or near 'IN'. SQLSTATE: 42601 (line 4, pos 10)\n\n== SQL ==\nCREATE OR REPLACE PROCEDURE GetEmployeeDetails(p_dept_id INT)\nLANGUAGE SQL\nBEGIN\n  FOR rec IN (\n----------^^^\n    SELECT CONCAT(e.employee_id, ' - ', e.first_name, ' ', e.last_name, ' - ', d.department_name, ' - ', e.salary) AS output\n    FROM employees e\n    INNER JOIN departments d\n      ON e.department_id = d.department_id\n    WHERE e.department_id = p_dept_id\n    ORDER BY e.salary DESC\n  )\n  DO\n    SELECT rec.output\n",
+      "details": ""
+    },
+    {
       "file_path": "input\\sql_server_input_files\\third\\oracle_sql2.sql",
       "source_platform": "Others",
       "target_platform": "databricks",
@@ -18,14 +207,51 @@
         ]
       },
       "functions": [
-        "INSERT",
-        "VALUES"
+        "INSERT"
       ],
-      "technical_summary": "The SQL statement performs a 'MERGE INTO' operation on the 'target_customers' table using the 'source_customers' table as the source. The merge condition is based on matching 'customer_id' in both tables. When a match is found, it updates 'customer_name' and 'city' in 'target_customers' with the corresponding values from 'source_customers'. When no match is found, it inserts new records into 'target_customers' with 'customer_id', 'customer_name', and 'city' from 'source_customers'. The 'INSERT' function specifies the columns to be inserted, and 'VALUES' provides the corresponding values from 'source_customers'.",
+      "technical_summary": "The SQL statement performs a 'MERGE INTO' operation on the 'target_customers' table using 'source_customers' as the source. It matches rows based on 'customer_id'. When a match is found, it updates 'customer_name' and 'city' in 'target_customers' with the corresponding values from 'source_customers'. When no match is found, it inserts new rows into 'target_customers' with 'customer_id', 'customer_name', and 'city' from 'source_customers'. The operation involves the 'INSERT' function for inserting new records.",
       "conversion_status": "SUCCESS",
       "validation_status": "PASS",
+      "total_tokens": 4013,
+      "retries": 0,
+      "metrics": {
+        "confidence": 100,
+        "unsupported_features": [],
+        "manual_review_required": false
+      },
       "error_message": null,
       "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'num_affected_rows': 20, 'num_updated_rows': 19, 'num_deleted_rows': 0, 'num_inserted_rows': 1}]\n"
+    },
+    {
+      "file_path": "input\\sql_server_input_files\\third\\oracle_sql3.sql",
+      "source_platform": "Others",
+      "target_platform": "databricks",
+      "language": "sql",
+      "tables_and_schema": {
+        "employees": [
+          "employee_name",
+          "department_id"
+        ],
+        "departments": [
+          "department_name",
+          "department_id"
+        ]
+      },
+      "functions": [
+        "DEPARTMENT_ID"
+      ],
+      "technical_summary": "The final output intent is to retrieve 'employee_name' and 'department_name' from the 'employees' and 'departments' tables. The source data involves two base tables: 'employees' aliased as 'e' and 'departments' aliased as 'd'. The SQL performs a LEFT JOIN between 'employees' and 'departments' on the condition 'e.department_id = d.department_id(+)' where '(+)' denotes a LEFT JOIN in Oracle syntax. The 'WHERE' clause applies this join condition. The 'SELECT' clause projects 'e.employee_name' and 'd.department_name' as the final output columns. There are no aggregations, grouping, or ordering applied. The 'DEPARTMENT_ID' function is used in the context of the '(+)' operator to indicate the LEFT JOIN. The evaluation order involves first applying the join condition and then selecting the specified columns.",
+      "conversion_status": "SUCCESS",
+      "validation_status": "PASS",
+      "total_tokens": 3648,
+      "retries": 0,
+      "metrics": {
+        "confidence": 100,
+        "unsupported_features": [],
+        "manual_review_required": false
+      },
+      "error_message": null,
+      "details": "Case 2: Passed on Databricks (Source execution skipped). Row count: 20. Data Sample: [{'employee_name': 'George Thompson', 'department_name': 'Finance'}, {'employee_name': 'Nancy Jenkins', 'department_name': 'Research'}, {'employee_name': 'Edward Harris', 'department_name': 'Marketing'}, {'employee_name': 'Alice Johnson', 'department_name': 'HR'}, {'employee_name': 'Quincy Wright', 'department_name': 'IT'}]\n"
     }
   ]
 }

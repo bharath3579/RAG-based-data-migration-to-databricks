@@ -1,1 +1,0 @@
-Case 2: Passed on Databricks (Source execution skipped). Row count: 1. Data Sample: [{'num_affected_rows': 20, 'num_updated_rows': 19, 'num_deleted_rows': 0, 'num_inserted_rows': 1}]

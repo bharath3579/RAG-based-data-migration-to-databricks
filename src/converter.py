@@ -32,6 +32,10 @@ class ConversionResult:
     pass_case_2: bool = False
     pass_case_3: bool = False
     details: str = ""
+    total_tokens: int = 0
+    retries: int = 0
+    first_pass_success: bool = False
+    metrics: dict | None = None
 
 def extract_cte_names(sql: str) -> set[str]:
     names = set()
@@ -70,6 +74,8 @@ def process_file(
     test_cases_output_dir: str | None = None,
     skip_validation: bool = False,
 ) -> ConversionResult:
+    total_tokens = 0
+
     print(f"[STEP 1/7] Parsing source {input_language.upper()} and generating structured summary...")
     if input_language == "pyspark":
         parser_output = parse_pyspark(source_code)
@@ -80,19 +86,23 @@ def process_file(
     summary_error = None
     try:
         if input_language == "pyspark":
-            code_summary = summarize_pyspark(
+            code_summary_res, sum_tokens = summarize_pyspark(
                 source_code=source_code,
                 parser_output=parser_output,
                 source_platform=source_dialect,
                 target_platform="Databricks Latest DBR",
-            ).model_dump()
+            )
+            code_summary = code_summary_res.model_dump()
+            total_tokens += sum_tokens
         else:
-            code_summary = summarize_sql(
+            code_summary_res, sum_tokens = summarize_sql(
                 source_sql=source_code,
                 parser_output=parser_output,
                 source_platform=source_dialect,
                 target_platform="Databricks Latest DBR",
-            ).model_dump()
+            )
+            code_summary = code_summary_res.model_dump()
+            total_tokens += sum_tokens
     except Exception as e:
         summary_error = f"AI Summary Error: {e}"
         print(f"    - [WARN] {summary_error}")
@@ -109,7 +119,8 @@ def process_file(
     if not skip_validation:
         print("[STEP 4/7] Invoking Databricks LLM agent to generate 3 edge/normal/boundary test datasets...")
         try:
-            test_cases = generate_sql_test_cases(source_code, code_summary=code_summary)
+            test_cases, tc_tokens = generate_sql_test_cases(source_code, code_summary=code_summary)
+            total_tokens += tc_tokens
             test_cases = drop_empty_ddl_cte_tables(test_cases, source_code)
             print(f"    - [PASS] Generated mock tables: {', '.join(t.table_name for t in test_cases.tables)}")
             for t in test_cases.tables:
@@ -146,6 +157,8 @@ def process_file(
     translation = None
     val_res = None
     latest_error = None
+    intelligent_feedback_obj = None
+    summary = None
     
     while attempt <= max_retries:
         if attempt > 0:
@@ -155,7 +168,7 @@ def process_file(
             
         try:
             if output_language == "pyspark":
-                translation = translate_pyspark(
+                translation, tr_tokens = translate_pyspark(
                     source_code=source_code, 
                     source_dialect=source_dialect, 
                     target_dialect=target_dialect, 
@@ -168,7 +181,7 @@ def process_file(
                 translation.test_databricks_sql = translation.test_databricks_code
                 translation.test_sql_server_sql = translation.test_source_code
             else:
-                translation = translate_sql(
+                translation, tr_tokens = translate_sql(
                     source_sql=source_code, 
                     source_dialect=source_dialect, 
                     target_dialect=target_dialect, 
@@ -200,6 +213,7 @@ def process_file(
         
         success = val_res.error is None and val_res.pass_case_1 and val_res.pass_case_2 and val_res.pass_case_3
         if success:
+            first_pass_success = (attempt == 0)
             print("    - [PASS] Validation passed successfully!")
             break
             
@@ -219,7 +233,8 @@ def process_file(
         if is_setup_error:
             print("    - [Self-Correction] Setup / test-data quality issue detected. Regenerating mock test cases...")
             try:
-                test_cases = generate_sql_test_cases(source_code, code_summary=code_summary, error_feedback=latest_error)
+                test_cases, tc_tokens = generate_sql_test_cases(source_code, code_summary=code_summary, error_feedback=latest_error)
+                total_tokens += tc_tokens
                 test_cases = drop_empty_ddl_cte_tables(test_cases, source_code)
             except Exception as ex:
                 print(f"    - Warning: test case regeneration failed: {ex}")
@@ -234,8 +249,12 @@ def process_file(
                     target_test_sql=translation.test_databricks_sql if translation else "",
                     raw_error=latest_error
                 )
+                intelligent_feedback_obj, if_tokens = intelligent_feedback
+                intelligent_feedback = intelligent_feedback_obj.failure_summary
+                total_tokens += if_tokens
                 print(f"      * [Feedback Generated] {intelligent_feedback[:100].strip()}...")
                 latest_error = f"INTELLIGENT VALIDATION ANALYSIS:\n{intelligent_feedback}\n\nRAW ERROR DETAILS:\n{latest_error}"
+                total_tokens += tr_tokens
             except Exception as e:
                 print(f"      * [Warning] Feedback generation failed: {e}")
             
@@ -244,7 +263,8 @@ def process_file(
     ai_summary = None
     if not success:
         try:
-            summary = summarize_failure(source_code, latest_error)
+            summary, sf_tokens = summarize_failure(source_code, latest_error)
+            total_tokens += sf_tokens
             ai_summary = summary.failure_summary
         except:
             pass
@@ -257,12 +277,45 @@ def process_file(
     if not success:
         error_message = val_res.error if val_res and val_res.error else "Validation failed"
 
+    # Calculate Native Metrics
+    unsupported_list = []
+    
+    # 1. Regex static scan
+    source_upper = source_code.upper()
+    if "CURSOR" in source_upper or "FETCH NEXT" in source_upper:
+        unsupported_list.append("cursor")
+    if "EXECUTE IMMEDIATE" in source_upper or "SP_EXECUTESQL" in source_upper or "EXEC(" in source_upper:
+        unsupported_list.append("dynamic_sql")
+    if "DBMS_OUTPUT" in source_upper:
+        unsupported_list.append("dbms_output")
+        
+    # 2. Extract from AI Summarizer
+    if summary and hasattr(summary, 'unsupported_features') and summary.unsupported_features:
+        unsupported_list.extend(summary.unsupported_features)
+    if intelligent_feedback_obj and hasattr(intelligent_feedback_obj, 'unsupported_features') and intelligent_feedback_obj.unsupported_features:
+        unsupported_list.extend(intelligent_feedback_obj.unsupported_features)
+    
+    # Deduplicate
+    unsupported_list = list(set([u.lower().strip() for u in unsupported_list]))
+    
+    manual_review = not success or len(unsupported_list) > 0
+    if success:
+        confidence = 100 if attempt == 0 else max(80, 100 - (attempt * 10))
+    else:
+        confidence = max(0, 50 - (len(unsupported_list) * 20))
+        
+    metrics_dict = {
+        "confidence": confidence,
+        "unsupported_features": unsupported_list,
+        "manual_review_required": manual_review
+    }
+
     return ConversionResult(
         source_file=source_file,
         sql_server_table_name=table_name,
         databricks_table_name=mapper.get_mapped_name(table_name),
         success=success,
-        final_mapped_sql=translation.final_mapped_sql if translation and not (val_res and val_res.error) else None,
+        final_mapped_sql=getattr(translation, "final_mapped_sql", getattr(translation, "final_mapped_code", None)) if translation else None,
         errorMessage=error_message,
         ai_summary=ai_summary,
         code_summary=code_summary,
@@ -270,5 +323,9 @@ def process_file(
         pass_case_1=val_res.pass_case_1 if val_res else False,
         pass_case_2=val_res.pass_case_2 if val_res else False,
         pass_case_3=val_res.pass_case_3 if val_res else False,
-        details=val_res.details if val_res else ""
+        details=val_res.details if val_res else "",
+        total_tokens=total_tokens,
+        retries=attempt if success else attempt - 1,
+        first_pass_success=first_pass_success if success else False,
+        metrics=metrics_dict
     )

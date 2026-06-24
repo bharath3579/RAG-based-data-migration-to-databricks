@@ -1,0 +1,166 @@
+{
+  "tables": [
+    "employees",
+    "departments"
+  ],
+  "aliases": {
+    "e": "employees",
+    "d": "departments"
+  },
+  "joins": [
+    {
+      "join_type": "INNER JOIN",
+      "table": "departments",
+      "alias": "d",
+      "condition": "e.department_id = d.department_id"
+    }
+  ],
+  "filters": "e.department_id = p_dept_id",
+  "select": "e.employee_id, e.first_name, e.last_name, d.department_name, e.salary",
+  "group_by": null,
+  "having": null,
+  "order_by": "e.salary DESC ) LOOP DBMS_OUTPUT.PUT_LINE( rec.employee_id || ' - ' || rec.first_name || ' ' || rec.last_name || ' - ' || rec.department_name || ' - ' || rec.salary ); END LOOP; END; /",
+  "row_limit": null,
+  "functions": [
+    "GETEMPLOYEEDETAILS",
+    "IN",
+    "PUT_LINE"
+  ],
+  "aggregations": [],
+  "function_calls": [
+    {
+      "function": "GETEMPLOYEEDETAILS",
+      "expression": "GetEmployeeDetails ( p_dept_id IN NUMBER )",
+      "arguments": [
+        {
+          "expression": "p_dept_id IN NUMBER",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "GETEMPLOYEEDETAILS"
+      ]
+    },
+    {
+      "function": "IN",
+      "expression": "IN ( SELECT e.employee_id, e.first_name, e.last_name, d.department_name, e.salary FROM employees e INNER JOIN departments d ON e.department_id = d.department_id WHERE e.department_id = p_dept_id ORDER BY e.salary DESC )",
+      "arguments": [
+        {
+          "expression": "SELECT e.employee_id",
+          "function_calls": []
+        },
+        {
+          "expression": "e.first_name",
+          "function_calls": []
+        },
+        {
+          "expression": "e.last_name",
+          "function_calls": []
+        },
+        {
+          "expression": "d.department_name",
+          "function_calls": []
+        },
+        {
+          "expression": "e.salary FROM employees e INNER JOIN departments d ON e.department_id = d.department_id WHERE e.department_id = p_dept_id ORDER BY e.salary DESC",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "IN"
+      ]
+    },
+    {
+      "function": "PUT_LINE",
+      "expression": "PUT_LINE( rec.employee_id || ' - ' || rec.first_name || ' ' || rec.last_name || ' - ' || rec.department_name || ' - ' || rec.salary )",
+      "arguments": [
+        {
+          "expression": "rec.employee_id || ' - ' || rec.first_name || ' ' || rec.last_name || ' - ' || rec.department_name || ' - ' || rec.salary",
+          "function_calls": []
+        }
+      ],
+      "nested_functions": [],
+      "evaluation_order": [
+        "PUT_LINE"
+      ]
+    }
+  ],
+  "clause_expressions": {
+    "select": [
+      {
+        "expression": "e.employee_id",
+        "source_expression": "e.employee_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "e.first_name",
+        "source_expression": "e.first_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "e.last_name",
+        "source_expression": "e.last_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "d.department_name",
+        "source_expression": "d.department_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "e.salary",
+        "source_expression": "e.salary",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ],
+    "where": [
+      {
+        "expression": "e.department_id = p_dept_id",
+        "source_expression": "e.department_id = p_dept_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ],
+    "group_by": [],
+    "having": [],
+    "order_by": [
+      {
+        "expression": "e.salary DESC ) LOOP DBMS_OUTPUT.PUT_LINE( rec.employee_id || ' - ' || rec.first_name || ' ' || rec.last_name || ' - ' || rec.department_name || ' - ' || rec.salary ); END LOOP; END; /",
+        "source_expression": "e.salary DESC ) LOOP DBMS_OUTPUT.PUT_LINE( rec.employee_id || ' - ' || rec.first_name || ' ' || rec.last_name || ' - ' || rec.department_name || ' - ' || rec.salary ); END LOOP; END; /",
+        "alias": null,
+        "function_calls": [
+          {
+            "function": "PUT_LINE",
+            "expression": "PUT_LINE( rec.employee_id || ' - ' || rec.first_name || ' ' || rec.last_name || ' - ' || rec.department_name || ' - ' || rec.salary )",
+            "arguments": [
+              {
+                "expression": "rec.employee_id || ' - ' || rec.first_name || ' ' || rec.last_name || ' - ' || rec.department_name || ' - ' || rec.salary",
+                "function_calls": []
+              }
+            ],
+            "nested_functions": [],
+            "evaluation_order": [
+              "PUT_LINE"
+            ]
+          }
+        ],
+        "evaluation_order": [
+          "PUT_LINE"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "file_path": "input\\sql_server_input_files\\third\\input_sql.sql",
+  "source_platform": "Others",
+  "target_platform": "Databricks Unity Catalog SQL",
+  "language": "sql",
+  "tables_and_schema": {
+    "tables": [],
+    "aliases": {}
+  },
+  "functions": [
+    "NVARCHAR"
+  ],
+  "technical_summary": "The source SQL declares a variable '@sql' of type 'NVARCHAR(MAX)', sets it to the string 'N''SELECT 1''', and then executes the contents of '@sql' using 'EXEC sp_executesql @sql'. The executed SQL is a simple 'SELECT 1', which returns a single row with a single column containing the value '1'. The original SQL does not directly reference any tables or perform any data operations beyond executing a trivial 'SELECT' statement. The 'NVARCHAR(MAX)' type is used for the variable '@sql', indicating it can hold a large string value.",
+  "summary_error": null
+}

@@ -1,0 +1,1 @@
+SELECT e.employee_name, d.department_name FROM testing_sql_ai.sandbox.employees e LEFT OUTER JOIN testing_sql_ai.sandbox.departments d ON e.department_id = d.department_id

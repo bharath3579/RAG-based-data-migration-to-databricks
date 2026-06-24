@@ -32,6 +32,7 @@ OUTPUT_FOLDERS = {
     "final_result": "final_result",
     "validation_excels": "validation_excels",
     "summarizer_excels": "summarizer_excels",
+    "metrics_outputs": "metrics_outputs",
 }
 
 def cleanup_dirs(dirs):
@@ -243,20 +244,22 @@ def main():
             try:
                 if input_language == "pyspark":
                     from src.agent import summarize_pyspark
-                    code_summary = summarize_pyspark(
+                    code_summary_res, _ = summarize_pyspark(
                         source_code=source_sql,
                         parser_output=parser_output,
                         source_platform=source_dialect,
                         target_platform=target_dialect,
-                    ).model_dump()
+                    )
+                    code_summary = code_summary_res.model_dump()
                 else:
                     from src.agent import summarize_sql
-                    code_summary = summarize_sql(
+                    code_summary_res, _ = summarize_sql(
                         source_sql=source_sql,
                         parser_output=parser_output,
                         source_platform=source_dialect,
                         target_platform=target_dialect,
-                    ).model_dump()
+                    )
+                    code_summary = code_summary_res.model_dump()
             except Exception as e:
                 summary_error = f"AI Summary Error: {e}"
                 print(f"    - [WARN] {summary_error}")
@@ -352,6 +355,11 @@ def main():
             with open(details_path, 'w', encoding='utf-8') as f:
                 f.write(result.details)
 
+        if hasattr(result, 'metrics') and result.metrics:
+            metrics_path = mirrored_output_file(input_base_dir, output_base_dir, "metrics_outputs", filepath, "_metrics.json")
+            write_json(metrics_path, result.metrics)
+            print(f"    - Saved metrics output to: {metrics_path}")
+
         append_summary(
             os.path.join(output_category_dir(output_base_dir, "summary_outputs"), "summary.json"),
             result,
@@ -378,6 +386,41 @@ def main():
 
     reporter = Reporter(validation_report_dir)
     md_report_path = reporter.generate_report(results)
+    print(f"Validation reports generated.\n")
+
+    # Migration Benchmark Summary Table
+    total_files = len(results)
+    if total_files > 0:
+        first_pass_count = sum(1 for r in results if getattr(r, 'first_pass_success', False))
+        final_success_count = sum(1 for r in results if r.success)
+        total_retries = sum(getattr(r, 'retries', 0) for r in results)
+        unsupported_count = sum(1 for r in results if getattr(r, 'metrics', None) and r.metrics.get('unsupported_features'))
+        manual_review_count = sum(1 for r in results if getattr(r, 'metrics', None) and r.metrics.get('manual_review_required'))
+        
+        first_pass_pct = int((first_pass_count / total_files) * 100)
+        final_success_pct = int((final_success_count / total_files) * 100)
+        avg_retries = round(total_retries / total_files, 1)
+        unsupported_pct = int((unsupported_count / total_files) * 100)
+        manual_review_pct = int((manual_review_count / total_files) * 100)
+
+        benchmark_table = f"""
+### Migration Benchmark Summary
+
+| Metric | Value |
+| ------ | ----- |
+| Files Tested | {total_files} |
+| First Pass Success | {first_pass_pct}% |
+| Final Success After Retry | {final_success_pct}% |
+| Avg Retries | {avg_retries} |
+| Unsupported Features | {unsupported_pct}% |
+| Human Intervention Needed | {manual_review_pct}% |
+"""
+        print(benchmark_table)
+        
+        # Append benchmark to text report
+        if hasattr(reporter, 'text_file') and reporter.text_file:
+            with open(reporter.text_file, 'a', encoding='utf-8') as f:
+                f.write("\n" + benchmark_table)
     
     print(f"\nExecution Complete! Report: {md_report_path}")
 

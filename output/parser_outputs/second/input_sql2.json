@@ -1,0 +1,128 @@
+{
+  "tables": [
+    "employee",
+    "EmployeeHierarchy"
+  ],
+  "aliases": {
+    "e": "employee",
+    "eh": "EmployeeHierarchy"
+  },
+  "joins": [
+    {
+      "join_type": "INNER JOIN",
+      "table": "EmployeeHierarchy",
+      "alias": "eh",
+      "condition": "e.manager_id = eh.employee_id ) SELECT employee_id, employee_name, manager_id, hierarchy_level FROM EmployeeHierarchy"
+    }
+  ],
+  "filters": "manager_id IS NULL UNION ALL SELECT e.employee_id, e.employee_name, e.manager_id, eh.hierarchy_level + 1 FROM employee e INNER JOIN EmployeeHierarchy eh ON e.manager_id = eh.employee_id ) SELECT employee_id, employee_name, manager_id, hierarchy_level FROM EmployeeHierarchy",
+  "select": "employee_id, employee_name, manager_id, 1 AS hierarchy_level",
+  "group_by": null,
+  "having": null,
+  "order_by": "hierarchy_level, employee_id",
+  "row_limit": null,
+  "functions": [],
+  "aggregations": [],
+  "function_calls": [],
+  "clause_expressions": {
+    "select": [
+      {
+        "expression": "employee_id",
+        "source_expression": "employee_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "employee_name",
+        "source_expression": "employee_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "manager_id",
+        "source_expression": "manager_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "1 AS hierarchy_level",
+        "source_expression": "1",
+        "alias": "hierarchy_level",
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ],
+    "where": [
+      {
+        "expression": "manager_id IS NULL UNION ALL SELECT e.employee_id",
+        "source_expression": "manager_id IS NULL UNION ALL SELECT e.employee_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "e.employee_name",
+        "source_expression": "e.employee_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "e.manager_id",
+        "source_expression": "e.manager_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "eh.hierarchy_level + 1 FROM employee e INNER JOIN EmployeeHierarchy eh ON e.manager_id = eh.employee_id ) SELECT employee_id",
+        "source_expression": "eh.hierarchy_level + 1 FROM employee e INNER JOIN EmployeeHierarchy eh ON e.manager_id = eh.employee_id ) SELECT employee_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "employee_name",
+        "source_expression": "employee_name",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "manager_id",
+        "source_expression": "manager_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "hierarchy_level FROM EmployeeHierarchy",
+        "source_expression": "hierarchy_level FROM EmployeeHierarchy",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ],
+    "group_by": [],
+    "having": [],
+    "order_by": [
+      {
+        "expression": "hierarchy_level",
+        "source_expression": "hierarchy_level",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      },
+      {
+        "expression": "employee_id",
+        "source_expression": "employee_id",
+        "alias": null,
+        "function_calls": [],
+        "evaluation_order": []
+      }
+    ]
+  }
+}

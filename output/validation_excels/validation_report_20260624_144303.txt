@@ -1,0 +1,75 @@
+=== DUAL ENGINE VALIDATION REPORT ===
+Date: 2026-06-24 14:43:03
+Normalization Assumptions:
+- All columns explicitly CAST to STRING.
+- Whitespace TRIMMED.
+- NULL values and empty strings converted to '__NULL__'.
+
+======================================
+
+TABLE: input_sql -> input_sql
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
+TABLE: sql3 -> sql3
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
+TABLE: input_sql2 -> input_sql2
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
+TABLE: sql_query4 -> sql_query4
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
+TABLE: input_sql -> input_sql
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
+TABLE: oracle_sql1 -> oracle_sql1
+STATUS: FAILED
+EXPLANATIONS:
+  - Error: Databricks Syntax Error: 
+[PARSE_SYNTAX_ERROR] Syntax error at or near 'IN'. SQLSTATE: 42601 (line 4, pos 10)
+
+== SQL ==
+CREATE OR REPLACE PROCEDURE GetEmployeeDetails(p_dept_id INT)
+LANGUAGE SQL
+BEGIN
+  FOR rec IN (
+----------^^^
+    SELECT CONCAT(e.employee_id, ' - ', e.first_name, ' ', e.last_name, ' - ', d.department_name, ' - ', e.salary) AS output
+    FROM employees e
+    INNER JOIN departments d
+      ON e.department_id = d.department_id
+    WHERE e.department_id = p_dept_id
+    ORDER BY e.salary DESC
+  )
+  DO
+    SELECT rec.output
+
+  - AI Root Cause Analysis:
+The SQL query failed due to a syntax error caused by using 'FOR rec IN' which is not directly supported in Databricks Unity Catalog SQL. The original SQL uses a cursor loop and DBMS_OUTPUT.PUT_LINE that are not natively supported in Databricks.
+----------------------------------------
+
+TABLE: oracle_sql2 -> oracle_sql2
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
+TABLE: oracle_sql3 -> oracle_sql3
+STATUS: SUCCESS (All validations passed)
+----------------------------------------
+
+
+
+### Migration Benchmark Summary
+
+| Metric | Value |
+| ------ | ----- |
+| Files Tested | 8 |
+| First Pass Success | 75% |
+| Final Success After Retry | 87% |
+| Avg Retries | 0.5 |
+| Unsupported Features | 25% |
+| Human Intervention Needed | 25% |

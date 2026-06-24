@@ -49,6 +49,9 @@ def append_summary(summary_path: str, result, rel_input_path: str, source_platfo
         "technical_summary": code_summary.get("technical_summary") or result.ai_summary or "",
         "conversion_status": "SUCCESS" if result.final_mapped_sql else "FAILED",
         "validation_status": "PASS" if result.success else ("FAIL" if result.final_mapped_sql else "NOT_EXECUTED"),
+        "total_tokens": result.total_tokens,
+        "retries": result.retries,
+        "metrics": result.metrics,
         "error_message": result.errorMessage,
         "details": result.details,
     })
@@ -67,5 +70,5 @@ def append_validation_report(report_path: str, rel_input_path: str, result):
     with open(report_path, "a", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(["file_path", "conversion_status", "validation_status", "details"])
-        writer.writerow([rel_input_path, conversion_status, validation_status, details])
+            writer.writerow(["file_path", "conversion_status", "validation_status", "total_tokens", "retries", "details"])
+        writer.writerow([rel_input_path, conversion_status, validation_status, result.total_tokens, result.retries, details])
